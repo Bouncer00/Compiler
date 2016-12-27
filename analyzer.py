@@ -12,18 +12,20 @@ class Analyzer:
         self.alread_inicialised = []
 
     def analyze(self):
-        self.undeclared_variables(self.commands)
+        self.undeclared_variables(self.commands, self.declared_variables)
         self.redeclaration([])
         self.initialised_variables(self.commands)
+        self.check_for_unincialised(self.commands)
 
-    def undeclared_variables(self, commands):
+    def undeclared_variables(self, commands, declared_variables):
         for command in commands:
             # if command[0] == "read" or command[0] == "write" or command[0] == "assign":
             if  isinstance(command, tuple) and len(command) == 3:
-                self.check_read_write(command)
+                if isinstance(command[2], int) and command[1] not in self.declared_variables:
+                    print "Variable", command[1], "in line", command[2], "not declared"
             if isinstance(command, tuple) and len(command) != 3:
                 if not command[0].__str__().startswith("for"):
-                    self.undeclared_variables(command)
+                    self.undeclared_variables(command, declared_variables)
 
                     # self.check_command(command)
             # if command[0] == "int" and command[1] not in already_declared:
@@ -40,16 +42,30 @@ class Analyzer:
         for command in commands:
             if isinstance(command, tuple) and (command[0] == "assign" or command[0] == "read"):
                 self.alread_inicialised.append(command[1][1])
-                print command
+                print "Initialized", command
             if isinstance(command, tuple) and len(command) != 3:
                 self.initialised_variables(command)
 
     def check_command(self, command):
-        print command
-        print command[1]
-        if len(command) > 3:
-            print command[3]
+        pass
+        # print command
+        # print command[1]
+        # if len(command) > 3:
+        #     print command[3]
 
-    def check_read_write(self, command):
-        if isinstance(command[2], int) and command[1] not in self.declared_variables:
-            print "Variable", command[1], "in line", command[2], "not declared"
+    def check_for_unincialised(self, commands):
+        for command in commands:
+            if isinstance(command, tuple) and command[0] =="assign" and len(command) > 2:
+                self.check_for_unincialised(command[1])
+                self.check_for_unincialised(command[2])
+
+            if self.is_variable(command) and command[1] not in self.alread_inicialised:
+                print command[1], "in line", command[2], "not initialised"
+                print command
+
+            if isinstance(command, tuple) and len(command) != 3:
+                if not command[0].__str__().startswith("for"):
+                    self.check_for_unincialised(command)
+
+    def is_variable(self, command):
+        return isinstance(command, tuple) and len(command) == 3 and isinstance(command[2], int)

@@ -121,8 +121,12 @@ class Parser(object):
         pass
 
     def p_error(self, p):
-        print('W linii %d', p.lineno)
-        print('Nieznany symbol "%s"', p.value)
+        if p.type == "NUMBER":
+            print'W linii {}'.format(p.lineno)
+            print'Nieznany symbol {}{}'.format(p.lexer.lexdata[p.lexpos - 1], p.lexer.lexdata[p.lexpos])
+        else:
+            print'W linii {}'.format(p.lineno)
+            print'Nieznany symbol {}'.format(p.value)
         raise CompilerException()
 
     def __init__(self):
