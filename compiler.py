@@ -7,7 +7,9 @@
 
 import argparse
 
+from abstract_sytax_tree import AST
 from parser import Parser
+from analyzer2 import Analyzer2
 from analyzer import Analyzer
 from compiler_exceptions import CompilerException
 # from lib.static_analysis import CodeAnalysis
@@ -41,21 +43,12 @@ def compilation(file_path, out_path):
     with open(file_path, 'r') as f:
         content = f.read()
 
-    # try:
     parse_tree = parser.parse(content)
-    analyzer = Analyzer(parse_tree)
+    analyzer = Analyzer2(parse_tree)
     analyzer.analyze()
-    # print(parse_tree)
-        # symtab, ast = analyser.check(ptree)
-        # graph = flow_graph.convert(ast)
-        # code = machine_code.gen(graph, symtab)
-    # except YamcError:
-    #     exit(1)
-
-    # with open(out_path, 'w') as f:
-    #     for line in code:
-    #         f.write(line + '\n')
-
+    ast_creator = AST(parse_tree)
+    abstract_syntax_tree = ast_creator.create()
+    print abstract_syntax_tree
 
 if __name__ == '__main__':
     main()

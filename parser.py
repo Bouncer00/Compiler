@@ -49,17 +49,17 @@ class Parser(object):
 
     def p_command_while(self, p):
         'command : WHILE condition DO commands ENDWHILE'
-        p[0] = ('while', p[2], p[4])
+        p[0] = ('while_loop', p[2], p[4])
 
     def p_command_for_up(self, p):
         'command : FOR PIDENTIFIER FROM value TO value DO commands ENDFOR'
         i = ('int', p[2], p.lineno(2))
-        p[0] = ('for_up', i, p[4], p[6], p[8])
+        p[0] = ('for_loop', i, p[4], p[6], p[8])
 
     def p_command_for_down(self, p):
         'command : FOR PIDENTIFIER FROM value DOWNTO value DO commands ENDFOR'
         i = ('int', p[2], p.lineno(2))
-        p[0] = ('for_down', i, p[4], p[6], p[8])
+        p[0] = ('for_loop', i, p[4], p[6], p[8])
 
     def p_command_read(self, p):
         'command : READ identifier SEMICOLON'
@@ -71,7 +71,7 @@ class Parser(object):
 
     def p_command_skip(self, p):
         'command : SKIP SEMICOLON'
-        p[0] = ('skip')
+        p[0] = ('skip',)
 
     # expression
     def p_expression_value(self, p):
@@ -109,8 +109,7 @@ class Parser(object):
 
     def p_identifier_table_id(self, p):
         'identifier : PIDENTIFIER LBRACKET PIDENTIFIER RBRACKET'
-        i = ('int', p[3], p.lineno(3))
-        p[0] = ('int[]', p[1], i, p.lineno(1))
+        p[0] = ('int[]', p[1], ('int', p[3], p.lineno(3)), p.lineno(1))
 
     def p_identifier_table_num(self, p):
         'identifier : PIDENTIFIER LBRACKET NUMBER RBRACKET'
@@ -122,11 +121,11 @@ class Parser(object):
 
     def p_error(self, p):
         if p.type == "NUMBER":
-            print'W linii {}'.format(p.lineno)
-            print'Nieznany symbol {}{}'.format(p.lexer.lexdata[p.lexpos - 1], p.lexer.lexdata[p.lexpos])
+            print'In line {}'.format(p.lineno)
+            print'Unknown symbol {}{}'.format(p.lexer.lexdata[p.lexpos - 1], p.lexer.lexdata[p.lexpos])
         else:
-            print'W linii {}'.format(p.lineno)
-            print'Nieznany symbol {}'.format(p.value)
+            print'In line {}'.format(p.lineno)
+            print'Unknown symbol {}'.format(p.value)
         raise CompilerException()
 
     def __init__(self):

@@ -20,12 +20,14 @@ class Analyzer:
     def undeclared_variables(self, commands, declared_variables):
         for command in commands:
             # if command[0] == "read" or command[0] == "write" or command[0] == "assign":
-            if  isinstance(command, tuple) and len(command) == 3:
+            print command
+            if  isinstance(command, tuple):
                 if isinstance(command[2], int) and command[1] not in self.declared_variables:
                     print "Variable", command[1], "in line", command[2], "not declared"
-            if isinstance(command, tuple) and len(command) != 3:
-                if not command[0].__str__().startswith("for"):
-                    self.undeclared_variables(command, declared_variables)
+                self.undeclared_variables(command, declared_variables)
+            # if isinstance(command, tuple) and len(command) != 3:
+            #     if not command[0].__str__().startswith("for"):
+            #         self.undeclared_variables(command, declared_variables)
 
                     # self.check_command(command)
             # if command[0] == "int" and command[1] not in already_declared:
@@ -69,3 +71,6 @@ class Analyzer:
 
     def is_variable(self, command):
         return isinstance(command, tuple) and len(command) == 3 and isinstance(command[2], int)
+
+    # def check_assign(self, variables, error_str):
+
