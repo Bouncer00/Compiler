@@ -8,6 +8,8 @@
 import argparse
 
 from abstract_sytax_tree import AST
+from code_generator import CodeGenerator
+from flow_graph import FlowGraph
 from parser import Parser
 from analyzer2 import Analyzer2
 from analyzer import Analyzer
@@ -47,8 +49,13 @@ def compilation(file_path, out_path):
     analyzer = Analyzer2(parse_tree)
     analyzer.analyze()
     ast_creator = AST(parse_tree)
-    abstract_syntax_tree = ast_creator.create()
-    print abstract_syntax_tree
+    abstract_syntax_tree, sym_tab = ast_creator.create()
+    code_generator = CodeGenerator(abstract_syntax_tree, sym_tab)
+    code = code_generator.generate()
+    for code_line in code:
+        print code_line
+    # flow_graph = FlowGraph(parse_tree, abstract_syntax_tree)
+    # flow_graph.create_flow_graph()
 
 if __name__ == '__main__':
     main()

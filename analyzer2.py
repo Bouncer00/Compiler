@@ -1,13 +1,16 @@
+from itertools import chain
+
 from compiler_exceptions import CompilerException
 
 
 class Analyzer2(object):
     def __init__(self, parse_tree):
-        _, self.declarations, self.code_commands = parse_tree
+        self.declarations = parse_tree[1]
+        self.code_commands = parse_tree[2]
         self.global_variables = set([a[:2] for a in self.declarations])
         self.initialized_variables = set()
         self.global_variables_names_with_types = {var[1]: var[0] for var in self.global_variables}
-        print parse_tree
+        # print parse_tree
 
     def analyze(self):
         in_scope_variables = set()
@@ -27,7 +30,6 @@ class Analyzer2(object):
         command_type = command[0]
 
         if command_type == "int" or command_type == "int[]":
-            print "VALUE"
             self.value(command, in_scope_variables)
         elif command_type == "assign":
             self.assign(command, in_scope_variables)
@@ -55,8 +57,7 @@ class Analyzer2(object):
             self.value(value[2], in_scope_variables)
 
         if self.global_variables_names_with_types.has_key(value[1]):
-            declared_val_type = self.global_variables_names_with_types[value[1]]
-            if declared_val_type != value[0]:
+            if self.global_variables_names_with_types[value[1]] != value[0]:
                 print 'In line', value[-1]
                 print'Wrong type of variable', value[0], value[1]
                 raise CompilerException()
@@ -89,36 +90,31 @@ class Analyzer2(object):
         self.operation(assign[2], in_scope_variables)
         self.value(assign[1], in_scope_variables, is_r_value=False)
 
-    def if_then(self, cmd, in_scope_variables):
-        _, condition, commands = cmd
-        self.operation(condition, in_scope_variables)
-        self.proceed_by_command_type(commands, in_scope_variables)
+    def if_then(self, c, in_scope_variables):
+        self.operation(c[1], in_scope_variables)
+        self.proceed_by_command_type(c[2], in_scope_variables)
 
-    def if_else(self, cmd, in_scope_variables):
-        _, condition, if_cmds, else_cmds = cmd
-        self.operation(condition, in_scope_variables)
-        self.proceed_by_command_type(if_cmds, in_scope_variables)
-        self.proceed_by_command_type(else_cmds, in_scope_variables)
+    def if_else(self, c, in_scope_variables):
+        self.operation(c[1], in_scope_variables)
+        self.proceed_by_command_type(c[2], in_scope_variables)
+        self.proceed_by_command_type(c[3], in_scope_variables)
 
-    def while_loop(self, cmd, in_scope_variables):
-        _, condition, commands = cmd
-        self.operation(condition, in_scope_variables)
-        self.proceed_by_command_type(commands, in_scope_variables)
+    def while_loop(self, c, in_scope_variables):
+        self.operation(c[1], in_scope_variables)
+        self.proceed_by_command_type(c[2], in_scope_variables)
 
-    def for_loop(self, cmd, in_scope_variables):
-        _, iterator, begin, end, commands = cmd
-        self.value(begin, in_scope_variables)
-        self.value(end, in_scope_variables)
-        iterator = iterator[:2]
+    def for_loop(self, c, in_scope_variables):
+        self.value(c[2], in_scope_variables)
+        self.value(c[3], in_scope_variables)
+        it = c[1][:2]
         in_scope_variables = set(in_scope_variables)
-        in_scope_variables.add(iterator)
-        self.initialized_variables.add(iterator)
-        self.proceed_by_command_type(commands, in_scope_variables)
+        in_scope_variables.add(it)
+        self.initialized_variables.add(c[1])
+        self.proceed_by_command_type(c[4], in_scope_variables)
 
-    def read(self, cmd, in_scope_variables):
-        _, variable = cmd
-        self.value(variable, in_scope_variables, is_r_value=False)
+    def read(self, c, in_scope_variables):
+        self.value(c[1], in_scope_variables, is_r_value=False)
 
-    def write(self, cmd, in_scope_variables):
-        _, variable = cmd
-        self.value(variable, in_scope_variables)
+    def write(self, c, in_scope_variables):
+        self.value(c[1], in_scope_variables)
+
