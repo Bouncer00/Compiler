@@ -23,6 +23,7 @@ class Analyzer2(object):
         for declaration in self.declarations:
             if declaration[1] in already_declared:
                 print "Redeclaration of:", declaration[1], "in line", declaration[2]
+                raise CompilerException()
             else:
                 already_declared.append(declaration[1])
 
@@ -101,7 +102,11 @@ class Analyzer2(object):
 
     def while_loop(self, c, in_scope_variables):
         self.operation(c[1], in_scope_variables)
-        self.proceed_by_command_type(c[2], in_scope_variables)
+        if isinstance(c[2], list):
+            for command in c[2]:
+                self.proceed_by_command_type(command, in_scope_variables)
+        else:
+            self.proceed_by_command_type(c[2], in_scope_variables)
 
     def for_loop(self, c, in_scope_variables):
         self.value(c[2], in_scope_variables)
@@ -109,8 +114,12 @@ class Analyzer2(object):
         it = c[1][:2]
         in_scope_variables = set(in_scope_variables)
         in_scope_variables.add(it)
-        self.initialized_variables.add(c[1])
-        self.proceed_by_command_type(c[4], in_scope_variables)
+        self.initialized_variables.add(c[1][:2])
+        if isinstance(c[4], list):
+            for command in c[4]:
+                self.proceed_by_command_type(command, in_scope_variables)
+        else:
+            self.proceed_by_command_type(c[4], in_scope_variables)
 
     def read(self, c, in_scope_variables):
         self.value(c[1], in_scope_variables, is_r_value=False)

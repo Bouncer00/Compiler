@@ -46,14 +46,15 @@ def compilation(file_path, out_path):
         content = f.read()
 
     parse_tree = parser.parse(content)
+    print parse_tree
     analyzer = Analyzer2(parse_tree)
     analyzer.analyze()
     ast_creator = AST(parse_tree)
     abstract_syntax_tree, sym_tab = ast_creator.create()
     code_generator = CodeGenerator(abstract_syntax_tree, sym_tab)
     code = code_generator.generate()
-    for code_line in code:
-        print code_line
+    for i in range(len(code)):
+        print str(i), code[i]
     # flow_graph = FlowGraph(parse_tree, abstract_syntax_tree)
     # flow_graph.create_flow_graph()
 
