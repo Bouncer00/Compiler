@@ -1,5 +1,5 @@
 from compiler_exceptions import CompilerException
-
+import copy
 
 class CodeGenerator:
 
@@ -276,7 +276,9 @@ class CodeGenerator:
         if isinstance(variable1, long) and not isinstance(variable0, long):
             if condition[2] == 0L:
                 if self.output_code[condition_start_line] == "WHILE_START":
-                    self.output_code[condition_start_line] = "JZERO " + str(self.get_variable_by_name_to_reg(variable0)) + " " + str(self.current_line)
+                    self.output_code[condition_start_line] = "JZERO " + \
+                                                             str(self.get_variable_by_name_to_reg(variable0)) + " " + \
+                                                             str(self.current_line)
                     self.add_line_of_code("JUMP " + str(condition_start_line))
                 else:
                     raise CompilerException("Couldnt convert condition statement")
@@ -372,7 +374,8 @@ class CodeGenerator:
     def if_eq(self, command, condition_start_line):
         var0, var1 = command[1], command[2]
         if isinstance(var0, long) and isinstance(var1, long) and var0 == var1:
-            if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or self.output_code[condition_start_line] == "IF_THEN_START":
+            if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or \
+                            self.output_code[condition_start_line] == "IF_THEN_START":
                 self.output_code.pop(condition_start_line)
 
         print command
@@ -380,35 +383,54 @@ class CodeGenerator:
     def if_neq(self, command, condition_start_line):
         var0, var1 = command[1], command[2]
         if isinstance(var0, long) and isinstance(var1, long) and var0 != var1:
-            if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or self.output_code[condition_start_line] == "IF_THEN_START":
+            if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or \
+                            self.output_code[condition_start_line] == "IF_THEN_START":
                 self.output_code.pop(condition_start_line)
         print command
 
     def if_gt(self, command, condition_start_line):
         var0, var1 = command[1], command[2]
         if isinstance(var0, long) and isinstance(var1, long) and var0 > var1:
-            if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or self.output_code[condition_start_line] == "IF_THEN_START":
+            if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or \
+                            self.output_code[condition_start_line] == "IF_THEN_START":
                 self.output_code.pop(condition_start_line)
+
+        elif isinstance(var1, long) and not isinstance(var0, long):
+            print "A>NUMBER"
+
+        elif isinstance(var0, long) and not isinstance(var1, long):
+            switched_commend = copy.deepcopy(command)
+            switched_commend[1] = var1
+            switched_commend[2] = var0
+            self.if_lt(switched_commend)
+
+        else:
+            print "A>B"
+            pass
         print command
 
     def if_lt(self, command, condition_start_line):
         var0, var1 = command[1], command[2]
         if isinstance(var0, long) and isinstance(var1, long) and var0 < var1:
-            if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or self.output_code[condition_start_line] == "IF_THEN_START":
+            if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or \
+                            self.output_code[condition_start_line] == "IF_THEN_START":
                 self.output_code.pop(condition_start_line)
+
         print command
 
     def if_gte(self, command, condition_start_line):
         var0, var1 = command[1], command[2]
         if isinstance(var0, long) and isinstance(var1, long) and var0 >= var1:
-            if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or self.output_code[condition_start_line] == "IF_THEN_START":
+            if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or \
+                            self.output_code[condition_start_line] == "IF_THEN_START":
                 self.output_code.pop(condition_start_line)
         print command
 
     def if_lte(self, command, condition_start_line):
         var0, var1 = command[1], command[2]
         if isinstance(var0, long) and isinstance(var1, long) and var0 <= var1:
-            if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or self.output_code[condition_start_line] == "IF_THEN_START":
+            if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or \
+                            self.output_code[condition_start_line] == "IF_THEN_START":
                 self.output_code.pop(condition_start_line)
         print command
 
