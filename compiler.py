@@ -10,7 +10,7 @@ import argparse
 from abstract_sytax_tree import AST
 from code_generator import CodeGenerator
 from flow_graph import FlowGraph
-from parser import Parser
+from code_parser import Parser
 from analyzer2 import Analyzer2
 from analyzer import Analyzer
 from compiler_exceptions import CompilerException
