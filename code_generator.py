@@ -11,7 +11,6 @@ class CodeGenerator:
         self.variables_with_memory_cells = {}
         self.variables_with_registers = {}
         self.registers = [None, None, None, None, None]
-        self.registers_ready = [False, False, False, False, False]
         self.memory_cells = [None] * 10000
 
     def generate(self):
@@ -60,10 +59,11 @@ class CodeGenerator:
         variable = assign[1]
         value = assign[2]
 
-
         if isinstance(value, long):
+            if self.registers_full():
+                self.move_value_from_register_to_memory(len(self.registers) - 1)
             register = self.get_free_register_number()
-            self.add_line_of_code("RESET " + str(register))
+            self.add_line_of_code("ZERO " + str(register))
             if value == 0:
                 return variable
 
@@ -74,7 +74,6 @@ class CodeGenerator:
                 if b == '1':
                     self.add_line_of_code('INC ' + str(register))
             self.store_value_in_register(variable)
-            self.move_value_from_register_to_memory(register)
             return variable
 
         elif value[0] == "+":
@@ -98,27 +97,44 @@ class CodeGenerator:
 
     def if_then_else(self, cmd):
         condition_start_line = self.current_line
-        self.add_line_of_code("IF_THEN_ELSE_START")
         operation = cmd[1][0]
 
         if operation == '>':
-            self.if_gt(cmd[1], condition_start_line)
+            reg_num = self.if_gt(cmd[1], condition_start_line)
         elif operation == '<':
-            self.if_lt(cmd[1], condition_start_line)
+            reg_num = self.if_lt(cmd[1], condition_start_line)
         elif operation == '>=':
-            self.if_lte(cmd[1], condition_start_line)
+            reg_num = self.if_lte(cmd[1], condition_start_line)
         elif operation == '<=':
-            self.if_gte(cmd[1], condition_start_line)
+            reg_num = self.if_gte(cmd[1], condition_start_line)
         elif operation == '=':
-            self.if_eq(cmd[1], condition_start_line)
+            reg_num = self.if_eq(cmd[1], condition_start_line)
         elif operation == '<>':
-            self.if_neq(cmd[1], condition_start_line)
+            reg_num = self.if_neq(cmd[1], condition_start_line)
+        else:
+            raise CompilerException("Not valid symbol")
+
+        line_number_if_start = self.current_line
+        self.add_line_of_code("IF_THEN_ELSE_IF_START")
 
         for command in cmd[2]:
             self.proceed_by_command_type(command)
 
+        line_number_else_start = self.current_line
+        self.add_line_of_code("IF_THEN_ELSE_ELSE_START")
+
+        if self.output_code[line_number_if_start] != "IF_THEN_ELSE_IF_START":
+            raise CompilerException("IF_THEN_ELSE_IF_START " + str(line_number_if_start) + " is not valid")
+
+        self.output_code[line_number_if_start] = "JZERO " + str(reg_num) + " " + str(line_number_else_start + 1)
         for command in cmd[3]:
             self.proceed_by_command_type(command)
+        line_number_after_else = self.current_line
+
+        if self.output_code[line_number_else_start] != "IF_THEN_ELSE_ELSE_START":
+            raise CompilerException("IF_THEN_ELSE_ELSE_START " + str(line_number_else_start) + " is not valid")
+
+        self.output_code[line_number_else_start] = "JUMP " + str(line_number_after_else)
         print "if_then_else", cmd
 
     def while_loop(self, cmd):
@@ -126,12 +142,35 @@ class CodeGenerator:
         print "While loop", cmd[2]
         condition_statement = cmd[1][0]
 
+        condition = cmd[1]
+
+        variable0 = condition[1]
+        variable1 = condition[2]
+
+        if isinstance(variable1, long) and not isinstance(variable0, long):
+            if not self.variables_with_registers.has_key(variable0):
+                self.move_value_from_memory_to_register(variable0)
+
+        if not isinstance(variable0, long) and not isinstance(variable1, long):
+            if not self.variables_with_registers.has_key(variable0):
+                self.move_value_from_memory_to_register(variable0)
+            if not self.variables_with_memory_cells.has_key(variable1):
+                self.move_value_from_register_to_memory(self.variables_with_registers[variable1])
+
+        if isinstance(variable1, long) and not isinstance(variable0, long):
+            register = self.get_free_register_number()
+            self.iterate_register_to_number(register, variable1)
+            memory_cell = self.get_free_memory_cell_index()
+            self.iterate_register_to_number(0, memory_cell)
+            self.add_line_of_code("STORE " + str(register))
+            self.memory_cells[memory_cell] = variable1
+            self.variables_with_memory_cells[variable1] = memory_cell
+
         #put condition assembly command here
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[variable0]))
         condition_start_line = self.current_line
         self.add_line_of_code("WHILE_START")
-
-        for command in cmd[2]:
-            commands_to_execute += [self.proceed_by_command_type(command)]
+        self.add_line_of_code("ADD " + str(self.variables_with_registers[variable0]))
 
         if condition_statement == '=':
             self.eq(cmd[1], condition_start_line)
@@ -146,27 +185,44 @@ class CodeGenerator:
         elif condition_statement == '<=':
             self.leq(cmd[1], condition_start_line)
 
+        for command in cmd[2]:
+            commands_to_execute += [self.proceed_by_command_type(command)]
+
+
+        self.iterate_register_to_number(0, self.variables_with_memory_cells[variable1])
+        self.add_line_of_code("JUMP " + str(condition_start_line - 1))
+        after_jump_line = self.current_line
+
+        self.output_code[condition_start_line] = self.output_code[condition_start_line].replace("WHILE_END", str(after_jump_line))
 
     def for_loop(self, cmd):
         print "for_loop", cmd
 
     def read(self, cmd):
+        if self.registers_full():
+            self.move_value_from_register_to_memory(len(self.registers) - 1)
+
         register_number = self.get_free_register_number()
         self.read_value_to_register(cmd[1], register_number)
-        self.move_value_from_register_to_memory(register_number)
         print "read", cmd
 
     def write(self, cmd):
         value = cmd[1]
         if isinstance(value, long):
             register = self.get_free_register_number()
-            value = bin(value)[2]
+            self.zero_register(register)
+
+            if value == 0L:
+                return
+
+            value = bin(value)[3:]
             self.add_line_of_code('INC ' + str(register))
             for b in value:
                 self.add_line_of_code('SHL ' + str(register))
                 if b == '1':
                     self.add_line_of_code('INC ' + str(register))
             self.add_line_of_code('PUT ' + str(register))
+            self.zero_register(register)
 
         else:
             if not self.variables_with_registers.has_key(value):
@@ -177,17 +233,17 @@ class CodeGenerator:
 
     def read_value_to_register(self, value, register_number):
         self.registers[register_number] = value
-        self.registers_ready[register_number] = False
+        # self.registers_ready[register_number] = False
         self.variables_with_registers[value] = register_number
         self.add_line_of_code("GET " + str(register_number))
 
     def store_value_in_register(self, value):
         value_stored = False
         for i in xrange(1, len(self.registers)):
-            if self.registers_ready[i]:
+            if self.registers[i] is None:
                 self.registers[i] = value
                 self.variables_with_registers[value] = i
-                self.registers_ready[i] = False
+                # self.registers_ready[i] = False
                 value_stored = True
             if value_stored: break
         if not value_stored:
@@ -215,14 +271,14 @@ class CodeGenerator:
         return memory_cell_index
 
     def get_free_memory_cell_index(self):
-        for i in range(len(self.memory_cells)):
+        for i in range(1, len(self.memory_cells)):
             if self.memory_cells[i] is None:
                 return i
         raise CompilerException("No free memory cell")
 
     def get_free_register_number(self):
         for i in xrange(1, len(self.registers)):
-            if self.registers_ready[i]:
+            if self.registers[i] is None:
                 return i
         raise CompilerException("No free register")
 
@@ -242,12 +298,12 @@ class CodeGenerator:
         if value is not None:
             del(self.variables_with_registers[value])
         self.registers[register_number] = None
-        self.registers_ready[register_number] = True
+        # self.registers_ready[register_number] = True
         self.add_line_of_code("ZERO " + str(register_number))
 
     def iterate_register_to_number(self, register_number, number):
         self.zero_register(register_number)
-        for i in range(number + 1):
+        for i in range(number):
             self.add_line_of_code("INC " + str(register_number))
 
     def get_variable_by_name(self):
@@ -269,6 +325,7 @@ class CodeGenerator:
         pass
 
     def gt(self, condition, condition_start_line):
+
         variable0 = condition[1]
         variable1 = condition[2]
 
@@ -277,9 +334,9 @@ class CodeGenerator:
             if condition[2] == 0L:
                 if self.output_code[condition_start_line] == "WHILE_START":
                     self.output_code[condition_start_line] = "JZERO " + \
-                                                             str(self.get_variable_by_name_to_reg(variable0)) + " " + \
-                                                             str(self.current_line)
-                    self.add_line_of_code("JUMP " + str(condition_start_line))
+                                                             str(self.variables_with_registers[variable0]) + " " + \
+                                                             "WHILE_END"
+
                 else:
                     raise CompilerException("Couldnt convert condition statement")
 
@@ -309,7 +366,7 @@ class CodeGenerator:
         self.variables_with_registers[variable_name] = register
         return register
 
-    def mul(self, a, b):
+    def mul(self, assign_to_var, a, b):
         if isinstance(a, long) and not isinstance(b, long):
             a,b = b,a
 
@@ -330,19 +387,13 @@ class CodeGenerator:
             if b == 2L:
                 self.add_line_of_code("SHR " + str(register_number))
 
-    def registers_full(self):
-        for register in self.registers:
-            if register is None:
-                return False
-        return True
-
     def assign_mul(self, assign):
         assign_to_var = assign[1]
         var0 = assign[2][1]
         var1 = assign[2][2]
         if isinstance(var0, long) and not isinstance(var1, long):
             var0, var1 = var1, var0
-        self.mul(var0, var1)
+        self.mul(assign_to_var, var0, var1)
         if assign_to_var != var0:
             register = self.variables_with_registers[var0]
             self.copy_value_from_register_to_memory(register, assign_to_var)
@@ -354,10 +405,10 @@ class CodeGenerator:
         var0 = assign[2][1]
         var1 = assign[2][2]
 
-        self.div(var0, var1)
-        
         if assign_to_var != var0:
             self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
+
+        self.div(assign_to_var, var1)
 
         print "assign div", assign
 
@@ -405,8 +456,19 @@ class CodeGenerator:
             self.if_lt(switched_commend)
 
         else:
-            print "A>B"
-            pass
+            # if not self.variables_with_registers.has_key(var0):
+            #     self.move_value_from_memory_to_register(var0)
+            if not self.variables_with_memory_cells.has_key(var1):
+                if not self.variables_with_registers.has_key(var1):
+                    raise CompilerException("Variable " + var1 + " does not exist neither in memory or register")
+                register_var1 = self.variables_with_registers[var1]
+                self.move_value_from_register_to_memory(var1)
+            var0_reg = self.variables_with_registers[var0]
+            var1_mem = self.variables_with_memory_cells[var1]
+            self.iterate_register_to_number(0, var1_mem)
+            self.add_line_of_code("SUB " + str(var0_reg))
+            return var0_reg
+
         print command
 
     def if_lt(self, command, condition_start_line):
@@ -437,5 +499,11 @@ class CodeGenerator:
     def if_mod(self, command, condition_start_line):
         var0, var1 = command[1], command[2]
         print command
+
+    def registers_full(self):
+        for i in range(1, len(self.registers)):
+            if self.registers[i] is None:
+                return False
+        return True
 
 

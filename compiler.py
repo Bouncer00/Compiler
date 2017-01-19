@@ -1,10 +1,4 @@
 #!/usr/bin/env python
-
-# Yet another MGC compiler
-# Author Adam Bobowski
-#
-# Compiler runner
-
 import argparse
 
 from abstract_sytax_tree import AST
@@ -55,6 +49,10 @@ def compilation(file_path, out_path):
     code = code_generator.generate()
     for i in range(len(code)):
         print str(i), code[i]
+
+    with open("labor4/code", 'w') as f:
+        for line in code:
+            f.write(line + '\n')
     # flow_graph = FlowGraph(parse_tree, abstract_syntax_tree)
     # flow_graph.create_flow_graph()
 
