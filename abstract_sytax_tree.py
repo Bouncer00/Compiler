@@ -86,8 +86,21 @@ class AST:
 
     def create_symtab(self, declarations):
         symtab = [t[:len(t) - 1] for t in declarations]
-        # print "Symtab", symtab
-        return symtab
+        memory = {}
+        cell_iter = 0
+        for symbol in symtab:
+            if symbol[0] == "int":
+                memory[symbol[1]] = cell_iter
+                cell_iter += 1
+            elif symbol[0] == "int[]":
+                for i in range(symbol[2]):
+                    s = list(symbol)
+                    s[2] = i
+                    memory[(s[1], i)] = cell_iter
+                    cell_iter += 1
+        print "Symtab", symtab
+        print "Memory", memory
+        return symtab, memory
         # tables = [t[1:] for t in symtab if t[0] == 'int[]']
         # print "Tables", tables
         # integers = [t[1] for t in symtab if t[0] == 'int']

@@ -5,27 +5,31 @@ class CodeGenerator:
 
     def __init__(self, abstract_syntax_tree, table):
         self.ast = abstract_syntax_tree
-        self.table = table
+        self.sym_tab = table[0]
+        self.memory = table[1]
         self.output_code = []
         self.current_line = 0
-        self.variables_with_memory_cells = {}
+        # self.variables_with_memory_cells = {}
         self.variables_with_registers = {}
         self.registers = [None, None, None, None, None]
-        self.memory_cells = [None] * 10000
+        # self.memory_cells = [None] * 10000
 
     def generate(self):
         print self.ast
-        print self.table
+        # print self.table
         self.zero_registers()
         for command in self.ast:
             self.proceed_by_command_type(command)
         self.add_line_of_code("HALT")
         print "REG", self.registers
-        print "MEM", self.memory_cells
+        print "MEM", self.memory
         print "REG_VAR", self.variables_with_registers
-        print "MEM_VAR", self.variables_with_memory_cells
+        # print "MEM_VAR", self.variables_with_memory_cells
         return self.output_code
 
+    def store_value_in_register(self, value, register):
+        self.registers[register] = value
+        self.variables_with_registers[value] = register
 
     def proceed_by_command_type(self, command):
         command_type = command[0]
@@ -60,8 +64,8 @@ class CodeGenerator:
         value = assign[2]
 
         if isinstance(value, long):
-            if self.registers_full():
-                self.move_value_from_register_to_memory(len(self.registers) - 1)
+            # if self.registers_full():
+            #     self.move_value_from_register_to_memory(len(self.registers) - 1)
             register = self.get_free_register_number()
             self.add_line_of_code("ZERO " + str(register))
             if value == 0:
@@ -74,6 +78,8 @@ class CodeGenerator:
                 if b == '1':
                     self.add_line_of_code('INC ' + str(register))
             self.store_value_in_register(variable)
+            self.iterate_register_to_number(0, self.memory[variable])
+            self.add_line_of_code("STORE " + str(register))
             return variable
 
         elif value[0] == "+":
@@ -177,20 +183,20 @@ class CodeGenerator:
             if not self.variables_with_registers.has_key(variable0):
                 self.move_value_from_memory_to_register(variable0)
 
-        if not isinstance(variable0, long) and not isinstance(variable1, long):
-            if not self.variables_with_registers.has_key(variable0):
-                self.move_value_from_memory_to_register(variable0)
-            if not self.variables_with_memory_cells.has_key(variable1):
-                self.move_value_from_register_to_memory(self.variables_with_registers[variable1])
+        # if not isinstance(variable0, long) and not isinstance(variable1, long):
+        #     if not self.variables_with_registers.has_key(variable0):
+        #         self.move_value_from_memory_to_register(variable0)
+        #     if not self.variables_with_memory_cells.has_key(variable1):
+        #         self.move_value_from_register_to_memory(self.variables_with_registers[variable1])
 
         if isinstance(variable1, long) and not isinstance(variable0, long):
             register = self.get_free_register_number()
             self.iterate_register_to_number(register, variable1)
-            memory_cell = self.get_free_memory_cell_index()
+            memory_cell = self.memory[variable1]
             self.iterate_register_to_number(0, memory_cell)
             self.add_line_of_code("STORE " + str(register))
-            self.memory_cells[memory_cell] = variable1
-            self.variables_with_memory_cells[variable1] = memory_cell
+            # self.memory_cells[memory_cell] = variable1
+            # self.variables_with_memory_cells[variable1] = memory_cell
 
         #put condition assembly command here
 
@@ -280,20 +286,16 @@ class CodeGenerator:
         return memory_cell_index
 
     def copy_value_from_register_to_memory(self, register_number, var_name):
-        value = self.registers[register_number]
-        memory_cell_index = self.get_free_memory_cell_index()
-        self.memory_cells[memory_cell_index] = var_name
-        self.iterate_register_to_number(0, memory_cell_index)
-        self.add_line_of_code("STORE " + str(register_number))
-        self.variables_with_memory_cells[var_name] = memory_cell_index
-        self.memory_cells[memory_cell_index] = var_name
-        return memory_cell_index
-
-    def get_free_memory_cell_index(self):
-        for i in range(1, len(self.memory_cells)):
-            if self.memory_cells[i] is None:
-                return i
-        raise CompilerException("No free memory cell")
+        # value = self.registers[register_number]
+        cell = self.memory[var_name]
+        self.iterate_register_to_number(0, cell)
+        self.add_line_of_code("STORE " + register_number)
+    #
+    # def get_free_memory_cell_index(self):
+    #     for i in range(1, len(self.memory_cells)):
+    #         if self.memory_cells[i] is None:
+    #             return i
+    #     raise CompilerException("No free memory cell")
 
     def get_free_register_number(self):
         for i in xrange(1, len(self.registers)):
@@ -313,13 +315,13 @@ class CodeGenerator:
         if register_number > len(self.registers) - 1:
             raise CompilerException("Trying to zero not existing register", register_number)
 
-        value = self.registers[register_number]
-        if value is not None:
-            if not self.variables_with_memory_cells.has_key(value):
-                self.move_value_from_register_to_memory(register_number)
-            # del(self.variables_with_registers[value])
-            # self.registers[register_number] = None
-        # self.registers_ready[register_number] = True
+        # value = self.registers[register_number]
+        # if value is not None:
+        #     if not self.variables_with_memory_cells.has_key(value):
+        #         self.move_value_from_register_to_memory(register_number)
+        #     # del(self.variables_with_registers[value])
+        #     # self.registers[register_number] = None
+        # # self.registers_ready[register_number] = True
         self.add_line_of_code("ZERO " + str(register_number))
 
     def iterate_register_to_number(self, register_number, number):
@@ -391,7 +393,7 @@ class CodeGenerator:
     def move_value_from_memory_to_register(self, variable_name):
         register = self.get_free_register_number()
         self.zero_register(0)
-        self.iterate_register_to_number(0, self.variables_with_memory_cells[variable_name])
+        self.iterate_register_to_number(0, self.memory[variable_name])
         self.add_line_of_code("LOAD " + str(register))
         self.registers[register] = variable_name
         self.variables_with_registers[variable_name] = register
@@ -423,9 +425,9 @@ class CodeGenerator:
         if isinstance(var0, long) and not isinstance(var1, long):
             var0, var1 = var1, var0
         self.mul(assign_to_var, var0, var1)
+
         if assign_to_var != var0:
-            register = self.variables_with_registers[var0]
-            self.copy_value_from_register_to_memory(register, assign_to_var)
+            self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
 
         print "assign mul", assign
 
@@ -441,8 +443,6 @@ class CodeGenerator:
 
         if assign_to_var != var0:
             self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
-        else:
-            self.move_value_from_register_to_memory(self.variables_with_registers[var0])
 
         # self.zero_register(self.variables_with_registers[var0])
 
