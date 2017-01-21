@@ -7,6 +7,7 @@ class AST:
         self.parse_tree = parse_tree
         _, self.declarations, self.code_commands = parse_tree
         self.ast = []
+        self.numbers = set()
         self.iter_no = 0
 
     def create(self):
@@ -49,7 +50,9 @@ class AST:
             return self.identifier(identifier[1])
 
     def value(self, value):
-        if isinstance(value, long): return value
+        if isinstance(value, long):
+            self.numbers.add(value)
+            return value
         elif value[0] == "int": return value[1]
         elif value[0] == "int[]": return (value[1], self.value(value[2]))
         return self.identifier(value)
@@ -88,6 +91,9 @@ class AST:
         symtab = [t[:len(t) - 1] for t in declarations]
         memory = {}
         cell_iter = 0
+        for number in self.numbers:
+            memory[number] = cell_iter
+            cell_iter += 1
         for symbol in symtab:
             if symbol[0] == "int":
                 memory[symbol[1]] = cell_iter
@@ -100,31 +106,5 @@ class AST:
                     cell_iter += 1
         print "Symtab", symtab
         print "Memory", memory
-        return symtab, memory
-        # tables = [t[1:] for t in symtab if t[0] == 'int[]']
-        # print "Tables", tables
-        # integers = [t[1] for t in symtab if t[0] == 'int']
-        # print "Integers", integers
-        #
-        # def f(x):
-        #     return '@' + str(x)
-        #
-        # def g(x):
-        #     return '#' + str(x)
-        #
-        # helpers = list(chain.from_iterable((f(x), g(x))
-        #                                    for x in xrange(self.iter_no)))
-        #
-        # print "Helpers", helpers
-        # integers.extend(helpers)
-        #
-        # k = 0
-        # symtab = {}
-        # for name in integers:
-        #     symtab[name] = k
-        #     k += 1
-        # for name, size in tables:
-        #     symtab[name] = k
-        #     k += size
-        #
-        # return symtab
+        print "Numbers", self.numbers
+        return symtab, memory, self.numbers
