@@ -54,12 +54,12 @@ class Parser(object):
     def p_command_for_up(self, p):
         'command : FOR PIDENTIFIER FROM value TO value DO commands ENDFOR'
         i = ('int', p[2], p.lineno(2))
-        p[0] = ('for_loop', i, p[4], p[6], p[8])
+        p[0] = ('for_up', i, p[4], p[6], p[8])
 
     def p_command_for_down(self, p):
         'command : FOR PIDENTIFIER FROM value DOWNTO value DO commands ENDFOR'
         i = ('int', p[2], p.lineno(2))
-        p[0] = ('for_loop', i, p[4], p[6], p[8])
+        p[0] = ('for_down', i, p[4], p[6], p[8])
 
     def p_command_read(self, p):
         'command : READ identifier SEMICOLON'

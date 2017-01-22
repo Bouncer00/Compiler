@@ -8,6 +8,7 @@ class AST:
         _, self.declarations, self.code_commands = parse_tree
         self.ast = []
         self.numbers = set()
+        self.iterators = set()
         self.iter_no = 0
 
     def create(self):
@@ -33,8 +34,10 @@ class AST:
             return self.if_else(command)
         elif command_type == "while_loop":
             return self.while_loop(command)
-        elif command_type == "for_loop":
-            return self.for_loop(command)
+        elif command_type == "for_up":
+            return self.for_up(command)
+        elif command_type == "for_down":
+            return self.for_down(command)
         elif command_type == "read":
             return self.read(command)
         elif command_type == "write":
@@ -77,9 +80,14 @@ class AST:
     def while_loop(self, command):
         return "while_loop", self.condition(command[1]), self.go_thorught_commands(command[2])
 
-    def for_loop(self, command):
+    def for_up(self, command):
         self.iter_no += 1
-        return "for_loop", self.value(command[1]), self.value(command[2]), self.value(command[3]), self.go_thorught_commands(command[4])
+        self.iterators.add(command[1][1])
+        return "for_up", self.value(command[1]), self.value(command[2]), self.value(command[3]), self.go_thorught_commands(command[4])
+
+    def for_down(self, command):
+        self.iterators.add(command[1][1])
+        return "for_down", self.value(command[1]), self.value(command[2]), self.value(command[3]), self.go_thorught_commands(command[4])
 
     def read(self, command):
         return "read", self.value(command[1])
@@ -91,6 +99,9 @@ class AST:
         symtab = [t[:len(t) - 1] for t in declarations]
         memory = {}
         cell_iter = 0
+        for number in self.iterators:
+            memory[number] = cell_iter
+            cell_iter += 1
         for number in self.numbers:
             memory[number] = cell_iter
             cell_iter += 1

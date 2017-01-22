@@ -40,7 +40,7 @@ class Analyzer2(object):
             self.if_else(command, in_scope_variables)
         elif command_type == "while_loop":
             self.while_loop(command, in_scope_variables)
-        elif command_type == "for_loop":
+        elif command_type == "for_up" or command_type == "for_down":
             self.for_loop(command, in_scope_variables)
         elif command_type == "read":
             self.read(command, in_scope_variables)
