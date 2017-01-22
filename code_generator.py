@@ -459,8 +459,8 @@ class CodeGenerator:
         if isinstance(a, long) and not isinstance(b, long):
             a,b = b,a
 
-        if not self.variables_with_registers.has_key(a):
-            self.move_value_from_memory_to_register(a)
+        # if not self.variables_with_registers.has_key(a):
+        #     self.move_value_from_memory_to_register(a)
 
         register_number = self.variables_with_registers[a]
         if isinstance(b, long):
@@ -480,16 +480,27 @@ class CodeGenerator:
         # if isinstance(var0, long) and not isinstance(var1, long):
         #     var0, var1 = var1, var0
 
-        self.move_value_from_memory_to_register(var0)
-        if assign_to_var != var0:
-            self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
+        if not isinstance(var0, long) and isinstance(var1, long):
+            self.move_value_from_memory_to_register(var0)
+            if assign_to_var != var0:
+                self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
+
+        elif isinstance(var0, long) and not isinstance(var1, long):
+            self.move_value_from_memory_to_register(var1)
+            if assign_to_var != var1:
+                self.copy_value_from_register_to_memory(self.variables_with_registers[var1], assign_to_var)
 
         self.move_value_from_memory_to_register(assign_to_var)
-        self.mul(var0, var1)
 
-        # if assign_to_var != var0:
-        #     self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
-        # else:
+        if isinstance(var0, long) and not isinstance(var1, long):
+            self.mul(assign_to_var, var0)
+        elif not isinstance(var0, long) and isinstance(var1, long):
+            self.mul(assign_to_var, var1)
+        elif assign_to_var == var0:
+            self.mul(assign_to_var, var1)
+        elif assign_to_var == var1:
+            self.mul(assign_to_var, var0)
+
         self.move_value_from_register_to_memory(self.variables_with_registers[assign_to_var])
 
         print "assign mul", assign
@@ -500,18 +511,14 @@ class CodeGenerator:
         var1 = assign[2][2]
 
         self.move_value_from_memory_to_register(var0)
-
         if assign_to_var != var0:
             self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
 
         self.move_value_from_memory_to_register(assign_to_var)
 
         self.div(assign_to_var, var1)
+
         self.move_value_from_register_to_memory(self.variables_with_registers[assign_to_var])
-
-        # self.zero_register(self.variables_with_registers[var0])
-
-        # self.div(assign_to_var, var1)
 
         print "assign div", assign
 
