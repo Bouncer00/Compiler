@@ -275,28 +275,28 @@ class CodeGenerator:
         print "for_down", cmd
 
     def for_up(self, cmd):
-        # iterator = cmd[1]
-        # start = cmd[2]
-        # end = cmd[3]
-        # self.move_value_from_memory_to_register(start)
-        # self.assign(("", iterator, start))
-        #
-        # for_start_line = self.current_line
-        # self.move_value_from_memory_to_register(iterator)
-        # self.iterate_register_to_number(0, self.memory[end])
-        # self.add_line_of_code("SUB " + str(self.variables_with_registers[iterator]))
-        # jzero_start = self.current_line
-        # self.add_line_of_code("JZERO " + str(self.variables_with_registers[iterator]) + " END")
-        # self.move_value_from_memory_to_register(iterator)
-        # for command in cmd[4]:
-        #     self.proceed_by_command_type(command)
-        #
-        # self.move_value_from_memory_to_register(iterator)
-        # self.add_line_of_code("DEC " + str(self.variables_with_registers[iterator]))
-        # self.move_value_from_register_to_memory(self.variables_with_registers[iterator])
-        # self.add_line_of_code("JUMP " + str(for_start_line))
-        # after_jzero_line = self.current_line
-        # self.output_code[jzero_start] = self.output_code[jzero_start].replace("END", str(after_jzero_line))
+        iterator = cmd[1]
+        start = cmd[2]
+        end = cmd[3]
+        self.move_value_from_memory_to_register(start)
+        self.assign(("", iterator, start))
+
+        for_start_line = self.current_line
+        self.move_value_from_memory_to_register(iterator)
+        self.iterate_register_to_number(0, self.memory[end])
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[iterator]))
+        jzero_start = self.current_line
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[iterator]) + " END")
+        self.move_value_from_memory_to_register(iterator)
+        for command in cmd[4]:
+            self.proceed_by_command_type(command)
+
+        self.move_value_from_memory_to_register(iterator)
+        self.add_line_of_code("DEC " + str(self.variables_with_registers[iterator]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[iterator])
+        self.add_line_of_code("JUMP " + str(for_start_line))
+        after_jzero_line = self.current_line
+        self.output_code[jzero_start] = self.output_code[jzero_start].replace("END", str(after_jzero_line))
         print "for_up", cmd
 
     def read(self, cmd):
@@ -384,18 +384,24 @@ class CodeGenerator:
 
     def iterate_register_to_number_array(self, register, variable):
         # if(register == 0):
-            start_of_array_memory = self.memory[(variable[0]), 0]
-            iterator = variable[1]
-            self.move_value_from_memory_to_register(iterator)
-            self.iterate_register_to_number(0, self.memory[iterator])
-            self.iterate_register_to_number(4, start_of_array_memory)
-            self.add_line_of_code("ADD " + str(4))
-            self.add_line_of_code("COPY " + str(4))
-            self.zero_register(4)
+        number_of_commands = 0
+        start_of_array_memory = self.memory[(variable[0]), 0]
+        iterator = variable[1]
+        self.move_value_from_memory_to_register(iterator)
+        number_of_commands += self.iterate_register_to_number(0, self.memory[iterator])
+        number_of_commands += self.iterate_register_to_number(4, start_of_array_memory)
+        self.add_line_of_code("ADD " + str(4))
+        number_of_commands += 1
+        self.add_line_of_code("COPY " + str(4))
+        number_of_commands += 1
+        self.zero_register(4)
+        number_of_commands += 1
+        return number_of_commands
 
-        # else:
+
+    # else:
         #     raise CompilerException("Not yet implemented")
-            print variable
+        #     print variable
 
 
     def get_variable_by_name(self):
@@ -405,24 +411,114 @@ class CodeGenerator:
     '''Math operations'''
 
     def eq(self, condition):
-        pass
-
-    def neq(self, condition):
-        pass
-
-    def leq(self, condition):
-        pass
-
-    def geq(self, condition):
-        pass
-
-    def gt(self, condition):
-
         variable0 = condition[1]
         variable1 = condition[2]
 
+        if isinstance(variable0, tuple) and not isinstance(variable1, tuple):
+            # self.move_value_from_memory_to_register(variable0)
+            pass
+        elif not isinstance(variable0, tuple) and isinstance(variable1, tuple):
+            pass
+
+        elif isinstance(variable0, long) and isinstance(variable1, long):
+            pass
+
+        elif not isinstance(variable0, long) and isinstance(variable1, long):
+            pass
+        elif isinstance(variable0, long) and not isinstance(variable1, long):
+            pass
+
+        elif not isinstance(variable0, long) and not isinstance(variable1, long):
+            pass
+
+    def neq(self, condition):
+        variable0 = condition[1]
+        variable1 = condition[2]
+
+        number_of_commands = 0
+
+        if isinstance(variable0, tuple) and not isinstance(variable1, tuple):
+            self.move_value_from_memory_to_register(variable0)
+            number_of_commands += self.iterate_register_to_number(0, self.memory[variable1])
+
+        elif not isinstance(variable0, tuple) and isinstance(variable1, tuple):
+            self.move_value_from_memory_to_register(variable0)
+            number_of_commands += self.iterate_register_to_number_array(0, variable1)
+
+        elif isinstance(variable0, long) and isinstance(variable1, long):
+            if variable0 != variable1:
+                return False, False
+
+
+        elif not isinstance(variable0, long) and isinstance(variable1, long):
+            self.move_value_from_memory_to_register(self.memory[variable0])
+            number_of_commands += self.iterate_register_to_number(0, self.memory[variable1])
+
+        elif isinstance(variable0, long) and not isinstance(variable1, long):
+            self.move_value_from_memory_to_register(self.memory[variable0])
+            number_of_commands += self.iterate_register_to_number(0, self.memory[variable1])
+
+        elif not isinstance(variable0, long) and not isinstance(variable1, long):
+            self.move_value_from_memory_to_register(self.memory[variable0])
+            number_of_commands += self.iterate_register_to_number(0, self.memory[variable1])
+
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[variable0]))
+        condition_start_line = self.current_line
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable0]) + " END")
+        return condition_start_line, number_of_commands
+        print "neq"
+
+    def leq(self, condition):
+        variable0 = condition[1]
+        variable1 = condition[2]
+
+        if isinstance(variable0, tuple) and not isinstance(variable1, tuple):
+            pass
+        elif not isinstance(variable0, tuple) and isinstance(variable1, tuple):
+            pass
+
+        elif isinstance(variable0, long) and isinstance(variable1, long):
+            pass
+
+        elif not isinstance(variable0, long) and isinstance(variable1, long):
+            pass
+        elif isinstance(variable0, long) and not isinstance(variable1, long):
+            pass
+
+        elif not isinstance(variable0, long) and not isinstance(variable1, long):
+            pass
+
+    def geq(self, condition):
+        variable0 = condition[1]
+        variable1 = condition[2]
+
+        if isinstance(variable0, tuple) and not isinstance(variable1, tuple):
+            pass
+        elif not isinstance(variable0, tuple) and isinstance(variable1, tuple):
+            pass
+
+        elif isinstance(variable0, long) and isinstance(variable1, long):
+            pass
+
+        elif not isinstance(variable0, long) and isinstance(variable1, long):
+            pass
+        elif isinstance(variable0, long) and not isinstance(variable1, long):
+            pass
+
+        elif not isinstance(variable0, long) and not isinstance(variable1, long):
+            pass
+
+    def gt(self, condition):
+        variable0 = condition[1]
+        variable1 = condition[2]
+
+        if isinstance(variable0, tuple) and not isinstance(variable1, tuple):
+            pass
+        elif not isinstance(variable0, tuple) and isinstance(variable1, tuple):
+            pass
+
         # f.e: a > 0
-        if isinstance(variable1, long) and not isinstance(variable0, long):
+        elif isinstance(variable1, long) and not isinstance(variable0, long):
             # self.move_value_from_memory_to_register(variable0)
 
             number_of_commands = 0
@@ -448,6 +544,9 @@ class CodeGenerator:
         elif isinstance(variable0, long) and not isinstance(variable1, long):
             raise CompilerException("Not yet implemented")
 
+        elif isinstance(variable0, long) and isinstance(variable1, long):
+            pass
+
         elif not isinstance(variable0, long) and not isinstance(variable1, long):
             var0_reg = self.variables_with_registers[variable0]
             var1_mem = self.memory[variable1]
@@ -465,10 +564,22 @@ class CodeGenerator:
             raise CompilerException("WTF")
 
     def lt(self, condition):
-        pass
+        variable0 = condition[1]
+        variable1 = condition[2]
 
-    def assign_value(self):
-        pass
+        if isinstance(variable0, tuple) and not isinstance(variable1, tuple):
+            pass
+        elif not isinstance(variable0, tuple) and isinstance(variable1, tuple):
+            pass
+
+
+        elif not isinstance(variable0, long) and isinstance(variable1, long):
+            pass
+        elif isinstance(variable0, long) and not isinstance(variable1, long):
+            pass
+
+        elif not isinstance(variable0, long) and not isinstance(variable1, long):
+            pass
 
     def get_variable_by_name_to_reg(self, variable_name):
         if not self.variables_with_registers.has_key(variable_name):
@@ -476,22 +587,32 @@ class CodeGenerator:
         return self.variables_with_registers[variable_name]
 
     def move_value_from_memory_to_register(self, variable_name):
+        number_of_commands = 0
         if isinstance(variable_name, tuple):
-            name = variable_name[0]
-            iterator = variable_name[1]
-            array_start = self.memory[(name, 0)]
-            pass
+            if self.variables_with_registers.has_key(variable_name):
+                register = self.variables_with_registers[variable_name]
+            else:
+                register = self.get_free_register_number()
+            number_of_commands += self.iterate_register_to_number_array(0, variable_name)
+            self.add_line_of_code("LOAD " + str(register))
+            number_of_commands += 1
+            self.registers[register] = variable_name
+            self.variables_with_registers[variable_name] = register
+
         else:
             if self.variables_with_registers.has_key(variable_name):
                 register = self.variables_with_registers[variable_name]
             else:
                 register = self.get_free_register_number()
             self.zero_register(0)
-            self.iterate_register_to_number(0, self.memory[variable_name])
+            number_of_commands += 1
+            number_of_commands += self.iterate_register_to_number(0, self.memory[variable_name])
             self.add_line_of_code("LOAD " + str(register))
+            number_of_commands += 1
             self.registers[register] = variable_name
             self.variables_with_registers[variable_name] = register
-            return register
+            # return register TODO: check if really not needed
+            return number_of_commands
 
     def mul(self, a, b):
         if isinstance(a, long) and not isinstance(b, long):
@@ -548,8 +669,14 @@ class CodeGenerator:
         var0 = assign[2][1]
         var1 = assign[2][2]
 
+        if isinstance(var0, long) and isinstance(var1, long):
+            result = var0 // var1
+            self.iterate_register_to_number(0, self.memory[assign_to_var])
+            self.iterate_register_to_number(1, result)
+            self.add_line_of_code("STORE 1")
+
         # TODO: check if this type of division if proper, commented below one works with program0.imp
-        if not isinstance(var0, long) and isinstance(var1, long):
+        elif not isinstance(var0, long) and isinstance(var1, long):
             self.move_value_from_memory_to_register(var0)
             if assign_to_var != var0:
                 self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
@@ -585,9 +712,35 @@ class CodeGenerator:
         print "assign div", assign
 
     def assign_modulo(self, assign):
+        assign_to_var = assign[1]
+        var0 = assign[2][1]
+        var1 = assign[2][2]
+
+        if isinstance(var0, long) and isinstance(var1, long):
+            result = var0 % var1
+            self.iterate_register_to_number(0, self.memory[assign_to_var])
+            self.iterate_register_to_number(1, result)
+            self.add_line_of_code("STORE 1")
+
         pass
 
     def assign_plus(self, assign):
+        assign_to_var = assign[1]
+        var0 = assign[2][1]
+        var1 = assign[2][2]
+
+        if isinstance(var0, long) and isinstance(var1, long):
+            result = var0 + var1
+            self.iterate_register_to_number(0, self.memory[assign_to_var])
+            self.iterate_register_to_number(1, result)
+            self.add_line_of_code("STORE 1")
+
+        else:
+            self.move_value_from_memory_to_register(var0)
+            self.iterate_register_to_number(0, self.memory[var1])
+            self.add_line_of_code("ADD " + str(self.variables_with_registers[var0]))
+            self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
+
         pass
 
     def assign_minus(self, assign):
@@ -600,6 +753,12 @@ class CodeGenerator:
             self.iterate_register_to_number(0, self.memory[assign_to_var])
             self.iterate_register_to_number(1, result)
             self.add_line_of_code("STORE 1")
+
+        else:
+            self.move_value_from_memory_to_register(var0)
+            self.iterate_register_to_number(0, self.memory[var1])
+            self.add_line_of_code("SUB " + str(self.variables_with_registers[var0]))
+            self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
 
     # def if_eq(self, command, condition_start_line):
     #     var0, var1 = command[1], command[2]
