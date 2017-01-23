@@ -1,0 +1,1 @@
+/usr/bin/c++   -g   CMakeFiles/labor4.dir/interpreter.cc.o  -o labor4 

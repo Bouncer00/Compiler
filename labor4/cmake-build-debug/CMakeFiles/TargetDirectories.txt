@@ -1,0 +1,3 @@
+/home/mariusz/Projects/Studia/jftt/Kompilator/labor4/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/mariusz/Projects/Studia/jftt/Kompilator/labor4/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/mariusz/Projects/Studia/jftt/Kompilator/labor4/cmake-build-debug/CMakeFiles/labor4.dir

@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/mariusz/Projects/Studia/jftt/Kompilator/labor4/interpreter.cc
+iostream
+-
+fstream
+-
+tuple
+-
+vector
+-
+map
+-
+cstdlib
+-
+ctime
+-
+

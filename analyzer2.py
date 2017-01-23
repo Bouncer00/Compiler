@@ -93,12 +93,15 @@ class Analyzer2(object):
 
     def if_then(self, c, in_scope_variables):
         self.operation(c[1], in_scope_variables)
-        self.proceed_by_command_type(c[2], in_scope_variables)
+        for command in c[2]:
+            self.proceed_by_command_type(command, in_scope_variables)
 
     def if_else(self, c, in_scope_variables):
         self.operation(c[1], in_scope_variables)
-        self.proceed_by_command_type(c[2], in_scope_variables)
-        self.proceed_by_command_type(c[3], in_scope_variables)
+        for command in c[2]:
+            self.proceed_by_command_type(command, in_scope_variables)
+        for command in c[3]:
+            self.proceed_by_command_type(command, in_scope_variables)
 
     def while_loop(self, c, in_scope_variables):
         self.operation(c[1], in_scope_variables)
