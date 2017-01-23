@@ -133,11 +133,12 @@ class CodeGenerator:
         elif not isinstance(variable0, long) and not isinstance(variable1, long):
             self.move_value_from_memory_to_register(variable0)
 
+        condition_start_line = None
 
         if condition_statement == '=':
             condition_start_line, number_of_commands_ = self.eq(cmd[1])
         elif condition_statement == '<>':
-            condition_start_line0, condition_start_line1, number_of_commands_ = self.neq(cmd[1])
+            condition_start_line, number_of_commands_ = self.neq(cmd[1])
         elif condition_statement == '>':
             condition_start_line, number_of_commands_ = self.gt(cmd[1])
         elif condition_statement == '<':
@@ -157,9 +158,6 @@ class CodeGenerator:
         if condition_start_line is not None:
             self.output_code[condition_start_line] = self.output_code[condition_start_line].replace("END",
                                                                                                 str(after_jump_line))
-        elif condition_start_line0 is not None and condition_start_line1 is not None:
-            self.output_code[condition_start_line0] = self.output_code[condition_start_line0].replace("END",str(after_jump_line))
-            self.output_code[condition_start_line1] = self.output_code[condition_start_line1].replace("END",str(after_jump_line))
 
     def if_then_else(self, cmd):
         condition_statement = cmd[1][0]
@@ -176,13 +174,11 @@ class CodeGenerator:
 
 
         condition_start_line = None
-        condition_start_line0 = None
-        condition_start_line1 = None
 
         if condition_statement == '=':
             condition_start_line, number_of_commands_ = self.eq(cmd[1])
         elif condition_statement == '<>':
-            condition_start_line0, condition_start_line1, number_of_commands_ = self.neq(cmd[1])
+            condition_start_line, number_of_commands_ = self.neq(cmd[1])
         elif condition_statement == '>':
             condition_start_line, number_of_commands_ = self.gt(cmd[1])
         elif condition_statement == '<':
@@ -202,11 +198,6 @@ class CodeGenerator:
         if condition_start_line is not None:
             self.output_code[condition_start_line] = self.output_code[condition_start_line].replace("END",
                                                                                                 str(after_jump_line))
-        elif condition_start_line0 is not None and condition_start_line1 is not None:
-            self.output_code[condition_start_line0] = self.output_code[condition_start_line0].replace("END",
-                                                                                                      str(after_jump_line))
-            self.output_code[condition_start_line1] = self.output_code[condition_start_line1].replace("END",
-                                                                                                      str(after_jump_line))
 
         self.add_line_of_code("START")
         line_number_else_start = self.current_line - 1
@@ -459,22 +450,42 @@ class CodeGenerator:
         variable0 = condition[1]
         variable1 = condition[2]
 
-        if isinstance(variable0, tuple) and not isinstance(variable1, tuple):
-            # self.move_value_from_memory_to_register(variable0)
-            pass
-        elif not isinstance(variable0, tuple) and isinstance(variable1, tuple):
-            pass
+        number_of_commands = 0
 
-        elif isinstance(variable0, long) and isinstance(variable1, long):
-            pass
+        if isinstance(variable0, long) and isinstance(variable1, long):
+            if variable0 == variable1:
+                return False, False
 
-        elif not isinstance(variable0, long) and isinstance(variable1, long):
-            pass
-        elif isinstance(variable0, long) and not isinstance(variable1, long):
-            pass
+        self.move_value_from_memory_to_register(variable0)
 
-        elif not isinstance(variable0, long) and not isinstance(variable1, long):
-            pass
+        if isinstance(variable1, tuple):
+            number_of_commands += self.iterate_register_to_number_array(0, variable1)
+        else:
+            number_of_commands += self.iterate_register_to_number(0, self.memory[variable1])
+
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[variable0]))
+        condition_start_line0 = self.current_line
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable0]) + " END")
+        jump0_line = self.current_line
+        self.add_line_of_code("JUMP END")
+
+        second_check_line = self.current_line
+        self.move_value_from_memory_to_register(variable1)
+
+        if isinstance(variable0, tuple):
+            number_of_commands += self.iterate_register_to_number_array(0, variable0)
+        else:
+            number_of_commands += self.iterate_register_to_number(0, self.memory[variable0])
+
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[variable1]))
+        condition_start_line1 = self.current_line
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable1]) + " END")
+
+        self.output_code[condition_start_line0] = self.output_code[condition_start_line0].replace("END", str(
+            second_check_line))
+        self.output_code[condition_start_line1] = self.output_code[condition_start_line1].replace("END", str(self.current_line))
+
+        return jump0_line, number_of_commands
 
     def neq(self, condition):
         variable0 = condition[1]
@@ -496,7 +507,10 @@ class CodeGenerator:
         self.add_line_of_code("SUB " + str(self.variables_with_registers[variable0]))
         condition_start_line0 = self.current_line
         self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable0]) + " END")
+        jump0_line = self.current_line
+        self.add_line_of_code("JUMP AFTER_SECOND_COND")
 
+        second_check_line = self.current_line
         self.move_value_from_memory_to_register(variable1)
 
         if isinstance(variable0, tuple):
@@ -508,15 +522,42 @@ class CodeGenerator:
         condition_start_line1 = self.current_line
         self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable1]) + " END")
 
-        return condition_start_line0, condition_start_line1, number_of_commands
+        self.output_code[condition_start_line0] = self.output_code[condition_start_line0].replace("END", str(second_check_line))
+        self.output_code[jump0_line] = self.output_code[jump0_line].replace("AFTER_SECOND_COND", str(self.current_line))
+
+        return condition_start_line1, number_of_commands
 
     def leq(self, condition):
         variable0 = condition[1]
         variable1 = condition[2]
+
         number_of_commands = 0
 
         if isinstance(variable0, long) and isinstance(variable1, long):
-            if variable0 <= variable1:
+            if variable0 > variable1:
+                return False, False
+
+        self.move_value_from_memory_to_register(variable1)
+
+        if isinstance(variable1, tuple):
+            number_of_commands += self.iterate_register_to_number_array(0, variable0)
+        else:
+            number_of_commands += self.iterate_register_to_number(0, self.memory[variable0])
+
+        self.add_line_of_code("INC " + str(self.variables_with_registers[variable1]))
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[variable1]))
+        condition_start_line0 = self.current_line
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable1]) + " END")
+        return condition_start_line0, number_of_commands
+
+    def geq(self, condition):
+        variable0 = condition[1]
+        variable1 = condition[2]
+
+        number_of_commands = 0
+
+        if isinstance(variable0, long) and isinstance(variable1, long):
+            if variable0 > variable1:
                 return False, False
 
         self.move_value_from_memory_to_register(variable0)
@@ -525,103 +566,112 @@ class CodeGenerator:
             number_of_commands += self.iterate_register_to_number_array(0, variable1)
         else:
             number_of_commands += self.iterate_register_to_number(0, self.memory[variable1])
+
+        self.add_line_of_code("INC " + str(self.variables_with_registers[variable0]))
         self.add_line_of_code("SUB " + str(self.variables_with_registers[variable0]))
-        condition_start_line = self.current_line
+        condition_start_line0 = self.current_line
         self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable0]) + " END")
-        return condition_start_line, number_of_commands
-
-    def geq(self, condition):
-        variable0 = condition[1]
-        variable1 = condition[2]
-
-        if isinstance(variable0, tuple) and not isinstance(variable1, tuple):
-            pass
-        elif not isinstance(variable0, tuple) and isinstance(variable1, tuple):
-            pass
-
-        elif isinstance(variable0, long) and isinstance(variable1, long):
-            pass
-
-        elif not isinstance(variable0, long) and isinstance(variable1, long):
-            pass
-        elif isinstance(variable0, long) and not isinstance(variable1, long):
-            pass
-
-        elif not isinstance(variable0, long) and not isinstance(variable1, long):
-            pass
+        return condition_start_line0, number_of_commands
 
     def gt(self, condition):
         variable0 = condition[1]
         variable1 = condition[2]
 
-        if isinstance(variable0, tuple) and not isinstance(variable1, tuple):
-            pass
-        elif not isinstance(variable0, tuple) and isinstance(variable1, tuple):
-            pass
+        number_of_commands = 0
 
-        # f.e: a > 0
-        elif isinstance(variable1, long) and not isinstance(variable0, long):
-            # self.move_value_from_memory_to_register(variable0)
+        if isinstance(variable0, long) and isinstance(variable1, long):
+            if variable0 > variable1:
+                return False, False
 
-            number_of_commands = 0
-            self.zero_register(0)
-            number_of_commands += 1
-            number_of_commands += self.iterate_register_to_number(0, self.memory[condition[2]])
-            self.add_line_of_code("SUB " + str(self.variables_with_registers[variable0]))
-            condition_start_line = self.current_line
-            self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable0]) + " END")
-            self.move_value_from_memory_to_register(variable0)
-            # if self.output_code[condition_start_line] == "START":
-            #     self.output_code[condition_start_line] = "JZERO " + \
-            #                                              str(self.variables_with_registers[variable0]) + " " + \
-            #                                              "END"
-            # self.add_line_of_code("ADD " + str(self.variables_with_registers[variable0]))
+        self.move_value_from_memory_to_register(variable0)
 
-                # else:
-                #     raise CompilerException("Couldnt convert condition statement")
-
-            return condition_start_line, number_of_commands + 3
-
-        # f.e: 10 > a
-        elif isinstance(variable0, long) and not isinstance(variable1, long):
-            raise CompilerException("Not yet implemented")
-
-        elif isinstance(variable0, long) and isinstance(variable1, long):
-            pass
-
-        elif not isinstance(variable0, long) and not isinstance(variable1, long):
-            var0_reg = self.variables_with_registers[variable0]
-            var1_mem = self.memory[variable1]
-            self.zero_register(0)
-            number_of_commands = self.iterate_register_to_number(0, var1_mem)
-            self.add_line_of_code("SUB " + str(var0_reg))
-            condition_start_line = self.current_line
-            self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable0]) + " END")
-            self.move_value_from_memory_to_register(variable0)
-
-
-            return condition_start_line, number_of_commands
-
+        if isinstance(variable1, tuple):
+            number_of_commands += self.iterate_register_to_number_array(0, variable1)
         else:
-            raise CompilerException("WTF")
+            number_of_commands += self.iterate_register_to_number(0, self.memory[variable1])
+
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[variable0]))
+        condition_start_line0 = self.current_line
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable0]) + " END")
+        return condition_start_line0, number_of_commands
+
+
+    # def gt(self, condition):
+    #     variable0 = condition[1]
+    #     variable1 = condition[2]
+    #
+    #     if isinstance(variable0, tuple) and not isinstance(variable1, tuple):
+    #         pass
+    #     elif not isinstance(variable0, tuple) and isinstance(variable1, tuple):
+    #         pass
+    #
+    #     # f.e: a > 0
+    #     elif isinstance(variable1, long) and not isinstance(variable0, long):
+    #         # self.move_value_from_memory_to_register(variable0)
+    #
+    #         number_of_commands = 0
+    #         self.zero_register(0)
+    #         number_of_commands += 1
+    #         number_of_commands += self.iterate_register_to_number(0, self.memory[condition[2]])
+    #         self.add_line_of_code("SUB " + str(self.variables_with_registers[variable0]))
+    #         condition_start_line = self.current_line
+    #         self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable0]) + " END")
+    #         self.move_value_from_memory_to_register(variable0)
+    #         # if self.output_code[condition_start_line] == "START":
+    #         #     self.output_code[condition_start_line] = "JZERO " + \
+    #         #                                              str(self.variables_with_registers[variable0]) + " " + \
+    #         #                                              "END"
+    #         # self.add_line_of_code("ADD " + str(self.variables_with_registers[variable0]))
+    #
+    #             # else:
+    #             #     raise CompilerException("Couldnt convert condition statement")
+    #
+    #         return condition_start_line, number_of_commands + 3
+    #
+    #     # f.e: 10 > a
+    #     elif isinstance(variable0, long) and not isinstance(variable1, long):
+    #         raise CompilerException("Not yet implemented")
+    #
+    #     elif isinstance(variable0, long) and isinstance(variable1, long):
+    #         pass
+    #
+    #     elif not isinstance(variable0, long) and not isinstance(variable1, long):
+    #         var0_reg = self.variables_with_registers[variable0]
+    #         var1_mem = self.memory[variable1]
+    #         self.zero_register(0)
+    #         number_of_commands = self.iterate_register_to_number(0, var1_mem)
+    #         self.add_line_of_code("SUB " + str(var0_reg))
+    #         condition_start_line = self.current_line
+    #         self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable0]) + " END")
+    #         self.move_value_from_memory_to_register(variable0)
+    #
+    #
+    #         return condition_start_line, number_of_commands
+    #
+    #     else:
+    #         raise CompilerException("WTF")
 
     def lt(self, condition):
         variable0 = condition[1]
         variable1 = condition[2]
 
-        if isinstance(variable0, tuple) and not isinstance(variable1, tuple):
-            pass
-        elif not isinstance(variable0, tuple) and isinstance(variable1, tuple):
-            pass
+        number_of_commands = 0
 
+        if isinstance(variable0, long) and isinstance(variable1, long):
+            if variable0 > variable1:
+                return False, False
 
-        elif not isinstance(variable0, long) and isinstance(variable1, long):
-            pass
-        elif isinstance(variable0, long) and not isinstance(variable1, long):
-            pass
+        self.move_value_from_memory_to_register(variable1)
 
-        elif not isinstance(variable0, long) and not isinstance(variable1, long):
-            pass
+        if isinstance(variable1, tuple):
+            number_of_commands += self.iterate_register_to_number_array(0, variable0)
+        else:
+            number_of_commands += self.iterate_register_to_number(0, self.memory[variable0])
+
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[variable1]))
+        condition_start_line0 = self.current_line
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable1]) + " END")
+        return condition_start_line0, number_of_commands
 
     def get_variable_by_name_to_reg(self, variable_name):
         if not self.variables_with_registers.has_key(variable_name):
@@ -801,86 +851,6 @@ class CodeGenerator:
             self.iterate_register_to_number(0, self.memory[var1])
             self.add_line_of_code("SUB " + str(self.variables_with_registers[var0]))
             self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
-
-    # def if_eq(self, command, condition_start_line):
-    #     var0, var1 = command[1], command[2]
-    #     if isinstance(var0, long) and isinstance(var1, long) and var0 == var1:
-    #         if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or \
-    #                         self.output_code[condition_start_line] == "IF_THEN_START":
-    #             self.output_code.pop(condition_start_line)
-    #
-    #     print command
-    #
-    # def if_neq(self, command, condition_start_line):
-    #     var0, var1 = command[1], command[2]
-    #     if isinstance(var0, long) and isinstance(var1, long) and var0 != var1:
-    #         if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or \
-    #                         self.output_code[condition_start_line] == "IF_THEN_START":
-    #             self.output_code.pop(condition_start_line)
-    #     print command
-    #
-    # def if_gt(self, command, condition_start_line):
-    #     var0, var1 = command[1], command[2]
-    #     if isinstance(var0, long) and isinstance(var1, long) and var0 > var1:
-    #         if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or \
-    #                         self.output_code[condition_start_line] == "IF_THEN_START":
-    #             self.output_code.pop(condition_start_line)
-    #
-    #     elif isinstance(var1, long) and not isinstance(var0, long):
-    #         print "A>NUMBER"
-    #
-    #     elif isinstance(var0, long) and not isinstance(var1, long):
-    #         switched_commend = copy.deepcopy(command)
-    #         switched_commend[1] = var1
-    #         switched_commend[2] = var0
-    #         self.if_lt(switched_commend)
-    #
-    #     else:
-    #         # if not self.variables_with_registers.has_key(var0):
-    #         #     self.move_value_from_memory_to_register(var0)
-    #         # if not self.variables_with_memory_cells.has_key(var1):
-    #         #     if not self.variables_with_registers.has_key(var1):
-    #         #         raise CompilerException("Variable " + var1 + " does not exist neither in memory or register")
-    #         #     register_var1 = self.variables_with_registers[var1]
-    #         #     self.move_value_from_register_to_memory(var1)
-    #         self.move_value_from_memory_to_register(var0)
-    #         var0_reg = self.variables_with_registers[var0]
-    #         var1_mem = self.memory[var1]
-    #         self.zero_register(0)
-    #         self.iterate_register_to_number(0, var1_mem)
-    #         self.add_line_of_code("SUB " + str(var0_reg))
-    #         return var0_reg
-    #
-    #     print command
-
-    # def if_lt(self, command, condition_start_line):
-    #     var0, var1 = command[1], command[2]
-    #     if isinstance(var0, long) and isinstance(var1, long) and var0 < var1:
-    #         if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or \
-    #                         self.output_code[condition_start_line] == "IF_THEN_START":
-    #             self.output_code.pop(condition_start_line)
-    #
-    #     print command
-    #
-    # def if_gte(self, command, condition_start_line):
-    #     var0, var1 = command[1], command[2]
-    #     if isinstance(var0, long) and isinstance(var1, long) and var0 >= var1:
-    #         if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or \
-    #                         self.output_code[condition_start_line] == "IF_THEN_START":
-    #             self.output_code.pop(condition_start_line)
-    #     print command
-    #
-    # def if_lte(self, command, condition_start_line):
-    #     var0, var1 = command[1], command[2]
-    #     if isinstance(var0, long) and isinstance(var1, long) and var0 <= var1:
-    #         if self.output_code[condition_start_line] == "IF_THEN_ELSE_START" or \
-    #                         self.output_code[condition_start_line] == "IF_THEN_START":
-    #             self.output_code.pop(condition_start_line)
-    #     print command
-    #
-    # def if_mod(self, command, condition_start_line):
-    #     var0, var1 = command[1], command[2]
-    #     print command
 
     def registers_full(self):
         for i in range(1, len(self.registers)):
