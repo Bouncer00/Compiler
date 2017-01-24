@@ -124,14 +124,14 @@ class CodeGenerator:
     def if_then(self, cmd):
         condition_statement = cmd[1][0]
 
-        variable0 = cmd[1][1]
-        variable1 = cmd[1][2]
-
-        if isinstance(variable1, long) and not isinstance(variable0, long):
-            self.move_value_from_memory_to_register(variable0)
-
-        elif not isinstance(variable0, long) and not isinstance(variable1, long):
-            self.move_value_from_memory_to_register(variable0)
+        # variable0 = cmd[1][1]
+        # variable1 = cmd[1][2]
+        #
+        # if isinstance(variable1, long) and not isinstance(variable0, long):
+        #     self.move_value_from_memory_to_register(variable0)
+        #
+        # elif not isinstance(variable0, long) and not isinstance(variable1, long):
+        #     self.move_value_from_memory_to_register(variable0)
 
         condition_start_line = None
 
@@ -151,9 +151,7 @@ class CodeGenerator:
         for command in cmd[2]:
             self.proceed_by_command_type(command)
 
-        # self.iterate_register_to_number(0, self.memory[variable1])
-        # self.add_line_of_code("JUMP " + str(condition_start_line - 1))
-        after_jump_line = self.current_line + 1
+        after_jump_line = self.current_line
 
         if condition_start_line is not None:
             self.output_code[condition_start_line] = self.output_code[condition_start_line].replace("END",
@@ -350,6 +348,9 @@ class CodeGenerator:
         return memory_cell_index
 
     def copy_value_from_register_to_memory(self, register_number, var_name):
+        if isinstance(var_name, tuple):
+            start_of_array_memory = self.memory[(var_name[0]), 0]
+            # self.move_value_from_memory_to_register()
         cell = self.memory[var_name]
         self.iterate_register_to_number(0, cell)
         self.add_line_of_code("STORE " + str(register_number))
@@ -420,6 +421,8 @@ class CodeGenerator:
 
     def iterate_register_to_number_array(self, register, variable):
         # if(register == 0):
+        if(register !=0):
+            raise CompilerException("Register cannot be != 0")
         number_of_commands = 0
         start_of_array_memory = self.memory[(variable[0]), 0]
         iterator = variable[1]
@@ -823,17 +826,21 @@ class CodeGenerator:
 
         if isinstance(var0, long) and isinstance(var1, long):
             result = var0 + var1
-            self.iterate_register_to_number(0, self.memory[assign_to_var])
+            if isinstance(assign_to_var, tuple):
+                self.iterate_register_to_number_array(0, assign_to_var)
+            else:
+                self.iterate_register_to_number(0, self.memory[assign_to_var])
             self.iterate_register_to_number(1, result)
             self.add_line_of_code("STORE 1")
 
         else:
             self.move_value_from_memory_to_register(var0)
-            self.iterate_register_to_number(0, self.memory[var1])
+            if isinstance(var1, tuple):
+                self.iterate_register_to_number_array(0, var1)
+            else:
+                self.iterate_register_to_number(0, self.memory[var1])
             self.add_line_of_code("ADD " + str(self.variables_with_registers[var0]))
             self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
-
-        pass
 
     def assign_minus(self, assign):
         assign_to_var = assign[1]
@@ -842,13 +849,19 @@ class CodeGenerator:
 
         if isinstance(var0, long) and isinstance(var1, long):
             result = var0 - var1
-            self.iterate_register_to_number(0, self.memory[assign_to_var])
+            if isinstance(assign_to_var, tuple):
+                self.iterate_register_to_number_array(0, assign_to_var)
+            else:
+                self.iterate_register_to_number(0, self.memory[assign_to_var])
             self.iterate_register_to_number(1, result)
             self.add_line_of_code("STORE 1")
 
         else:
             self.move_value_from_memory_to_register(var0)
-            self.iterate_register_to_number(0, self.memory[var1])
+            if isinstance(var1, tuple):
+                self.iterate_register_to_number_array(0, var1)
+            else:
+                self.iterate_register_to_number(0, self.memory[var1])
             self.add_line_of_code("SUB " + str(self.variables_with_registers[var0]))
             self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
 
