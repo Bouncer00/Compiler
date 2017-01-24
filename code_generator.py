@@ -83,6 +83,11 @@ class CodeGenerator:
                 register = self.get_free_register_number()
             self.add_line_of_code("ZERO " + str(register))
             if value == 0:
+                if isinstance(variable, tuple):
+                    self.iterate_register_to_number_array(0, variable)
+                else:
+                    self.iterate_register_to_number(0, self.memory[variable])
+                self.add_line_of_code("STORE " + str(register))
                 return variable
 
             value = bin(value)[3:]
@@ -266,6 +271,7 @@ class CodeGenerator:
         for_start_line = self.current_line
         self.move_value_from_memory_to_register(iterator)
         self.iterate_register_to_number(0, self.memory[end])
+        self.add_line_of_code("INC " + str(self.variables_with_registers[iterator]))
         self.add_line_of_code("SUB " + str(self.variables_with_registers[iterator]))
         jzero_start = self.current_line
         self.add_line_of_code("JZERO " + str(self.variables_with_registers[iterator]) + " END")
