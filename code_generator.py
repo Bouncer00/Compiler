@@ -63,6 +63,8 @@ class CodeGenerator:
         elif command_type == "skip":
             return
 
+        self.zero_registers()
+
         # self.zero_not_needed_registers()
 
 
@@ -454,6 +456,10 @@ class CodeGenerator:
         number_of_commands = 0
         start_of_array_memory = self.memory[(variable[0]), 0]
         iterator = variable[1]
+
+        # if isinstance(iterator, str):
+        #     pass
+        # else:
         self.move_value_from_memory_to_register(iterator)
         number_of_commands += self.iterate_register_to_number(0, self.memory[iterator])
         number_of_commands += self.iterate_register_to_number(4, start_of_array_memory)
