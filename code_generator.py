@@ -78,38 +78,15 @@ class CodeGenerator:
         variable = assign[1]
         value = assign[2]
 
+        if isinstance(variable, tuple):
+            self.iterate_register_to_number_array(0, variable)
+        else:
+            self.iterate_register_to_number(0, self.memory[variable])
+
         if isinstance(value, long):
-            if self.variables_with_registers.has_key(variable):
-                register = self.variables_with_registers[variable]
-            else:
-                register = self.get_free_register_number()
-            self.add_line_of_code("ZERO " + str(register))
-            if value == 0:
-                if isinstance(variable, tuple):
-                    self.iterate_register_to_number_array(0, variable)
-                else:
-                    self.iterate_register_to_number(0, self.memory[variable])
-                self.add_line_of_code("STORE " + str(register))
-                return variable
-
-            value = bin(value)[3:]
-            self.add_line_of_code('INC ' + str(register))
-            for b in value:
-                self.add_line_of_code('SHL ' + str(register))
-                if b == '1':
-                    self.add_line_of_code('INC ' + str(register))
-            self.store_value_in_register(variable, register)
-            if isinstance(variable, tuple):
-                self.iterate_register_to_number_array(0, variable)
-            else:
-                self.iterate_register_to_number(0, self.memory[variable])
+            register = self.get_free_register_number()
+            self.iterate_register_to_number(register, value)
             self.add_line_of_code("STORE " + str(register))
-
-            return variable
-
-        # elif not isinstance(variable, long) and not isinstance(value, long):
-        #     pass
-
 
         elif value[0] == "+":
             self.assign_plus(assign)
@@ -127,6 +104,60 @@ class CodeGenerator:
                 self.copy_value_from_register_to_memory(self.variables_with_registers[value], variable)
 
         print "assign", assign
+
+    # def assign(self, assign):
+    #     variable = assign[1]
+    #     value = assign[2]
+    #
+    #     if isinstance(value, long):
+    #         if self.variables_with_registers.has_key(variable):
+    #             register = self.variables_with_registers[variable]
+    #         else:
+    #             register = self.get_free_register_number()
+    #         self.add_line_of_code("ZERO " + str(register))
+    #         if value == 0:
+    #             if isinstance(variable, tuple):
+    #                 self.iterate_register_to_number_array(0, variable)
+    #             else:
+    #                 self.iterate_register_to_number(0, self.memory[variable])
+    #             self.add_line_of_code("STORE " + str(register))
+    #             return variable
+    #
+    #         value = bin(value)[3:]
+    #         self.add_line_of_code('INC ' + str(register))
+    #         for b in value:
+    #             self.add_line_of_code('SHL ' + str(register))
+    #             if b == '1':
+    #                 self.add_line_of_code('INC ' + str(register))
+    #         self.store_value_in_register(variable, register)
+    #         if isinstance(variable, tuple):
+    #             self.iterate_register_to_number_array(0, variable)
+    #         else:
+    #             self.iterate_register_to_number(0, self.memory[variable])
+    #         self.add_line_of_code("STORE " + str(register))
+    #
+    #         return variable
+    #
+    #     # elif not isinstance(variable, long) and not isinstance(value, long):
+    #     #     pass
+    #
+    #
+    #     elif value[0] == "+":
+    #         self.assign_plus(assign)
+    #     elif value[0] == "-":
+    #         self.assign_minus(assign)
+    #     elif value[0] == "*":
+    #         self.assign_mul(assign)
+    #     elif value[0] == "/":
+    #         self.assign_div(assign)
+    #     elif value[0] == "%":
+    #         self.assign_modulo(assign)
+    #     elif not isinstance(variable, long) and not isinstance(value, long):
+    #         self.move_value_from_memory_to_register(value)
+    #         if variable != value:
+    #             self.copy_value_from_register_to_memory(self.variables_with_registers[value], variable)
+    #
+    #     print "assign", assign
 
     def if_then(self, cmd):
         condition_statement = cmd[1][0]
@@ -358,11 +389,13 @@ class CodeGenerator:
     def move_value_from_register_to_memory(self, register_number):
         var_name = self.registers[register_number]
         if isinstance(var_name, tuple):
-            self.iterate_register_to_number_array(0, self.memory[var_name])
+            self.iterate_register_to_number_array(0, var_name)
+            self.add_line_of_code("STORE " + str(register_number))
+            return self.memory[var_name[0], 0]
         else:
             self.iterate_register_to_number(0, self.memory[var_name])
-        self.add_line_of_code("STORE " + str(register_number))
-        return self.memory[var_name]
+            self.add_line_of_code("STORE " + str(register_number))
+            return self.memory[var_name]
 
     def copy_value_from_register_to_memory_array(self, register_number, var_name):
         number_of_commands = 0
@@ -451,31 +484,34 @@ class CodeGenerator:
 
     def iterate_register_to_number_array(self, register, variable):
         # if(register == 0):
-        if(register !=0):
+        if(register != 0):
             raise CompilerException("Register cannot be != 0")
         number_of_commands = 0
         start_of_array_memory = self.memory[(variable[0]), 0]
         iterator = variable[1]
 
-        # if isinstance(iterator, str):
-        #     pass
-        # else:
-        self.move_value_from_memory_to_register(iterator)
-        number_of_commands += self.iterate_register_to_number(0, self.memory[iterator])
-        number_of_commands += self.iterate_register_to_number(4, start_of_array_memory)
-        self.add_line_of_code("ADD " + str(4))
-        number_of_commands += 1
-        self.add_line_of_code("COPY " + str(4))
-        number_of_commands += 1
-        self.zero_register(4)
-        number_of_commands += 1
-        return number_of_commands
+        if isinstance(iterator, str):
+            self.move_value_from_memory_to_register(iterator)
+            number_of_commands += self.iterate_register_to_number(4, start_of_array_memory)
+            self.add_line_of_code("ADD " + str(4))
+            number_of_commands += 1
+            self.add_line_of_code("COPY " + str(4))
+            number_of_commands += 1
+            self.zero_register(4)
+            number_of_commands += 1
+            return number_of_commands
 
-
-    # else:
-        #     raise CompilerException("Not yet implemented")
-        #     print variable
-
+        else:
+            self.move_value_from_memory_to_register(iterator)
+            number_of_commands += self.iterate_register_to_number(0, self.memory[iterator])
+            number_of_commands += self.iterate_register_to_number(4, start_of_array_memory)
+            self.add_line_of_code("ADD " + str(4))
+            number_of_commands += 1
+            self.add_line_of_code("COPY " + str(4))
+            number_of_commands += 1
+            self.zero_register(4)
+            number_of_commands += 1
+            return number_of_commands
 
     def get_variable_by_name(self):
         pass
@@ -873,31 +909,132 @@ class CodeGenerator:
 
     #    return jzero_inst_line
 
-    # def assign_div(self, assign):
-    #     assign_to_var = assign[1]
-    #     var0 = assign[2][1]
-    #     var1 = assign[2][2]
-    #     d = self.memory[assign_to_var]
-    #     a = self.memory[var0]
-    #     b = self.memory[var1]
-    #     c_name = 'temporary_div_variable_c'
-    #     d_name = 'temporary_div_variable_d'
-    #     self.memory[c_name] = self.get_free_memory_cell()
-    #     self.memory[d_name] = self.get_free_memory_cell()
-    #     self.move_value_from_memory_to_register(c_name)
-    #     self.add_line_of_code("ZERO " + str(self.variables_with_registers[c_name]))
-    #     self.move_value_from_register_to_memory(self.variables_with_registers[c_name])
-    #     self.registers[self.variables_with_registers[c_name]] = None
-    #     del self.variables_with_registers[c_name]
-    #     self.move_value_from_memory_to_register(d_name)
-    #     self.add_line_of_code("ZERO " + str(self.variables_with_registers[d_name]))
-    #     self.move_value_from_register_to_memory(self.variables_with_registers[d_name])
-    #     self.registers[self.variables_with_registers[d_name]] = None
-    #     del self.variables_with_registers[d_name]
-    #
-    #     self.move_value_from_memory_to_register(var0)
-    #     self.add_line_of_code("JZERO " + str(self.variables_with_registers[var0]) + " END")
-        # self.move_value_from_register_to_memory()
+    def assign_div(self, assign):
+        assign_to_var = assign[1]
+        var0 = assign[2][1]
+        var1 = assign[2][2]
+        d = self.memory[assign_to_var]
+        a = self.memory[var0]
+        b = self.memory[var1]
+        a_copy_name = 'assign_div_a_copy_name'
+        b_copy_name = 'assign_div_b_copy_name'
+        c_copy_name = 'assign_div_c_copy_name'
+        d_copy_name = 'assign_div_d_copy_name'
+        e_copy_name = 'assign_div_e_copy_name'
+
+        self.memory[a_copy_name] = self.get_free_memory_cell()
+        self.memory[b_copy_name] = self.get_free_memory_cell()
+        self.memory[c_copy_name] = self.get_free_memory_cell()
+        self.memory[d_copy_name] = self.get_free_memory_cell()
+        self.memory[e_copy_name] = self.get_free_memory_cell()
+
+        c = self.memory[c_copy_name]
+        e = self.memory[e_copy_name]
+
+        self.move_value_from_memory_to_register(assign_to_var)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[assign_to_var], d_copy_name)
+
+        self.move_value_from_memory_to_register(var0)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[var0], a_copy_name)
+
+        self.move_value_from_memory_to_register(var1)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[var1], b_copy_name)
+
+        self.move_value_from_memory_to_register(a_copy_name)
+        jzer_dzero_line = self.current_line
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[a_copy_name]) + " D_ZERO")
+
+        self.move_value_from_memory_to_register(b_copy_name)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[b_copy_name], e_copy_name)
+
+        loop0_line = self.current_line
+        self.move_value_from_memory_to_register(e_copy_name)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[e_copy_name], d_copy_name)
+
+        self.move_value_from_memory_to_register(d_copy_name)
+
+        self.iterate_register_to_number(0, self.memory[a_copy_name])
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[d_copy_name]))
+
+        jzero_shl_e_line = self.current_line
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[d_copy_name]) + " SHL_E")
+        jump_div_line = self.current_line
+        self.add_line_of_code("JUMP DIV")
+
+        self.output_code[jzero_shl_e_line] = self.output_code[jzero_shl_e_line].replace("SHL_E", str(self.current_line))
+
+        self.move_value_from_memory_to_register(e_copy_name)
+        self.add_line_of_code("SHL " + str(self.variables_with_registers[e_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[e_copy_name])
+
+        self.add_line_of_code("JUMP " + str(loop0_line))
+
+        self.output_code[jump_div_line] = self.output_code[jump_div_line].replace("DIV", str(self.current_line))
+        self.move_value_from_memory_to_register(d_copy_name)
+        self.add_line_of_code("ZERO " + str(self.variables_with_registers[d_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[d_copy_name])
+
+        loop1_line = self.current_line
+        self.move_value_from_memory_to_register(e_copy_name)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[e_copy_name], c_copy_name)
+
+        jzero_one_line = self.current_line
+        self.move_value_from_memory_to_register(c_copy_name)
+        jzero_inst_one_line = self.current_line
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[c_copy_name]) + " ONE_LINE")
+
+        self.move_value_from_memory_to_register(d_copy_name)
+        self.add_line_of_code("SHL " + str(self.variables_with_registers[d_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[d_copy_name])
+
+        self.move_value_from_memory_to_register(e_copy_name)
+        self.add_line_of_code("SHR " + str(self.variables_with_registers[e_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[e_copy_name])
+        
+        jump_check_line = self.current_line
+        self.add_line_of_code("JUMP CHECK")
+        self.output_code[jzero_inst_one_line] = self.output_code[jzero_inst_one_line].replace("ONE_LINE", str(self.current_line))
+
+        self.move_value_from_memory_to_register(d_copy_name)
+        self.add_line_of_code("SHL " + str(self.variables_with_registers[d_copy_name]))
+        self.add_line_of_code("INC " + str(self.variables_with_registers[d_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[d_copy_name])
+        
+        self.move_value_from_memory_to_register(a_copy_name)
+        self.iterate_register_to_number(0, self.memory[e_copy_name])
+        
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[a_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[a_copy_name])
+
+        self.move_value_from_memory_to_register(e_copy_name)
+        self.add_line_of_code("SHR " + str(self.variables_with_registers[e_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[e_copy_name])
+        
+        self.output_code[jump_check_line] = self.output_code[jump_check_line].replace("CHECK", str(self.current_line))
+
+        self.move_value_from_memory_to_register(b_copy_name)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[b_copy_name], c_copy_name)
+        
+        self.move_value_from_memory_to_register(c_copy_name)
+        self.iterate_register_to_number(0, self.memory[e_copy_name])
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[c_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[c_copy_name])
+        
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[c_copy_name]) + " " + str(loop1_line))
+        jump_end_line = self.current_line
+        self.add_line_of_code("JUMP END")
+        
+        self.output_code[jzer_dzero_line] = self.output_code[jzer_dzero_line].replace("D_ZERO", str(self.current_line))
+        
+        self.move_value_from_memory_to_register(a_copy_name)
+        self.add_line_of_code("ZERO " + str(self.variables_with_registers[a_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[a_copy_name])
+
+        self.move_value_from_memory_to_register(d_copy_name)
+        self.add_line_of_code("ZERO " + str(self.variables_with_registers[d_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[d_copy_name])
+
+        self.output_code[jump_end_line] = self.output_code[jump_end_line].replace("END", str(self.current_line))
 
 
 
@@ -933,40 +1070,40 @@ class CodeGenerator:
     #
     #     print "assign mul", assign
 
-    def assign_div(self, assign):
-        assign_to_var = assign[1]
-        var0 = assign[2][1]
-        var1 = assign[2][2]
-
-        if isinstance(var0, long) and isinstance(var1, long):
-            result = var0 // var1
-            self.iterate_register_to_number(0, self.memory[assign_to_var])
-            self.iterate_register_to_number(1, result)
-            self.add_line_of_code("STORE 1")
-
-        # TODO: check if this type of division if proper, commented below one works with program0.imp
-        elif not isinstance(var0, long) and isinstance(var1, long):
-            self.move_value_from_memory_to_register(var0)
-            if assign_to_var != var0:
-                self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
-            self.move_value_from_memory_to_register(assign_to_var)
-            self.div(assign_to_var, var1)
-            self.move_value_from_register_to_memory(self.variables_with_registers[assign_to_var])
-
-        elif isinstance(var0, long) and not isinstance(var1, long):
-            self.move_value_from_memory_to_register(var1)
-            if assign_to_var != var1:
-                self.copy_value_from_register_to_memory(self.variables_with_registers[var1], assign_to_var)
-            self.move_value_from_memory_to_register(assign_to_var)
-            self.div(assign_to_var, var1)
-            self.move_value_from_register_to_memory(self.variables_with_registers[assign_to_var])
-
-        elif not isinstance(var0, long) and not isinstance(var1, long):
-            self.move_value_from_memory_to_register(var0)
-            if assign_to_var != var0:
-                self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
-            self.div(assign_to_var, var1)
-            self.move_value_from_register_to_memory(self.variables_with_registers[assign_to_var])
+    # def assign_div(self, assign):
+    #     assign_to_var = assign[1]
+    #     var0 = assign[2][1]
+    #     var1 = assign[2][2]
+    #
+    #     if isinstance(var0, long) and isinstance(var1, long):
+    #         result = var0 // var1
+    #         self.iterate_register_to_number(0, self.memory[assign_to_var])
+    #         self.iterate_register_to_number(1, result)
+    #         self.add_line_of_code("STORE 1")
+    #
+    #     # TODO: check if this type of division if proper, commented below one works with program0.imp
+    #     elif not isinstance(var0, long) and isinstance(var1, long):
+    #         self.move_value_from_memory_to_register(var0)
+    #         if assign_to_var != var0:
+    #             self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
+    #         self.move_value_from_memory_to_register(assign_to_var)
+    #         self.div(assign_to_var, var1)
+    #         self.move_value_from_register_to_memory(self.variables_with_registers[assign_to_var])
+    #
+    #     elif isinstance(var0, long) and not isinstance(var1, long):
+    #         self.move_value_from_memory_to_register(var1)
+    #         if assign_to_var != var1:
+    #             self.copy_value_from_register_to_memory(self.variables_with_registers[var1], assign_to_var)
+    #         self.move_value_from_memory_to_register(assign_to_var)
+    #         self.div(assign_to_var, var1)
+    #         self.move_value_from_register_to_memory(self.variables_with_registers[assign_to_var])
+    #
+    #     elif not isinstance(var0, long) and not isinstance(var1, long):
+    #         self.move_value_from_memory_to_register(var0)
+    #         if assign_to_var != var0:
+    #             self.copy_value_from_register_to_memory(self.variables_with_registers[var0], assign_to_var)
+    #         self.div(assign_to_var, var1)
+    #         self.move_value_from_register_to_memory(self.variables_with_registers[assign_to_var])
 
         # self.move_value_from_memory_to_register(var0)
         # if assign_to_var != var0:

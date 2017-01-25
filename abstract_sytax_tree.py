@@ -65,7 +65,7 @@ class AST:
 
     def expression(self, expression):
         if(len(expression) == 2):
-            return expression[1]
+            return self.value(expression[1])
         return expression[1], self.value(expression[2]), self.value(expression[3])
 
     def condition(self, condition):
