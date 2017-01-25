@@ -913,9 +913,7 @@ class CodeGenerator:
         assign_to_var = assign[1]
         var0 = assign[2][1]
         var1 = assign[2][2]
-        d = self.memory[assign_to_var]
-        a = self.memory[var0]
-        b = self.memory[var1]
+
         a_copy_name = 'assign_div_a_copy_name'
         b_copy_name = 'assign_div_b_copy_name'
         c_copy_name = 'assign_div_c_copy_name'
@@ -928,11 +926,8 @@ class CodeGenerator:
         self.memory[d_copy_name] = self.get_free_memory_cell()
         self.memory[e_copy_name] = self.get_free_memory_cell()
 
-        c = self.memory[c_copy_name]
-        e = self.memory[e_copy_name]
-
-        self.move_value_from_memory_to_register(assign_to_var)
-        self.copy_value_from_register_to_memory(self.variables_with_registers[assign_to_var], d_copy_name)
+        # self.move_value_from_memory_to_register(assign_to_var)
+        # self.copy_value_from_register_to_memory(self.variables_with_registers[assign_to_var], d_copy_name)
 
         self.move_value_from_memory_to_register(var0)
         self.copy_value_from_register_to_memory(self.variables_with_registers[var0], a_copy_name)
@@ -940,9 +935,9 @@ class CodeGenerator:
         self.move_value_from_memory_to_register(var1)
         self.copy_value_from_register_to_memory(self.variables_with_registers[var1], b_copy_name)
 
-        self.move_value_from_memory_to_register(a_copy_name)
+        self.move_value_from_memory_to_register(b_copy_name)
         jzer_dzero_line = self.current_line
-        self.add_line_of_code("JZERO " + str(self.variables_with_registers[a_copy_name]) + " D_ZERO")
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[b_copy_name]) + " D_ZERO")
 
         self.move_value_from_memory_to_register(b_copy_name)
         self.copy_value_from_register_to_memory(self.variables_with_registers[b_copy_name], e_copy_name)
@@ -978,8 +973,11 @@ class CodeGenerator:
         self.move_value_from_memory_to_register(e_copy_name)
         self.copy_value_from_register_to_memory(self.variables_with_registers[e_copy_name], c_copy_name)
 
-        jzero_one_line = self.current_line
         self.move_value_from_memory_to_register(c_copy_name)
+        self.iterate_register_to_number(0, self.memory[a_copy_name])
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[c_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[c_copy_name])
+
         jzero_inst_one_line = self.current_line
         self.add_line_of_code("JZERO " + str(self.variables_with_registers[c_copy_name]) + " ONE_LINE")
 
@@ -1035,6 +1033,9 @@ class CodeGenerator:
         self.move_value_from_register_to_memory(self.variables_with_registers[d_copy_name])
 
         self.output_code[jump_end_line] = self.output_code[jump_end_line].replace("END", str(self.current_line))
+
+        self.move_value_from_memory_to_register(d_copy_name)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[d_copy_name], assign_to_var)
 
 
 
@@ -1122,13 +1123,129 @@ class CodeGenerator:
         var0 = assign[2][1]
         var1 = assign[2][2]
 
-        if isinstance(var0, long) and isinstance(var1, long):
-            result = var0 % var1
-            self.iterate_register_to_number(0, self.memory[assign_to_var])
-            self.iterate_register_to_number(1, result)
-            self.add_line_of_code("STORE 1")
+        a_copy_name = 'assign_div_a_copy_name'
+        b_copy_name = 'assign_div_b_copy_name'
+        c_copy_name = 'assign_div_c_copy_name'
+        d_copy_name = 'assign_div_d_copy_name'
+        e_copy_name = 'assign_div_e_copy_name'
 
-        pass
+        self.memory[a_copy_name] = self.get_free_memory_cell()
+        self.memory[b_copy_name] = self.get_free_memory_cell()
+        self.memory[c_copy_name] = self.get_free_memory_cell()
+        self.memory[d_copy_name] = self.get_free_memory_cell()
+        self.memory[e_copy_name] = self.get_free_memory_cell()
+
+        # self.move_value_from_memory_to_register(assign_to_var)
+        # self.copy_value_from_register_to_memory(self.variables_with_registers[assign_to_var], d_copy_name)
+
+        self.move_value_from_memory_to_register(var0)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[var0], a_copy_name)
+
+        self.move_value_from_memory_to_register(var1)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[var1], b_copy_name)
+
+        self.move_value_from_memory_to_register(b_copy_name)
+        jzer_dzero_line = self.current_line
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[b_copy_name]) + " D_ZERO")
+
+        self.move_value_from_memory_to_register(b_copy_name)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[b_copy_name], e_copy_name)
+
+        loop0_line = self.current_line
+        self.move_value_from_memory_to_register(e_copy_name)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[e_copy_name], d_copy_name)
+
+        self.move_value_from_memory_to_register(d_copy_name)
+
+        self.iterate_register_to_number(0, self.memory[a_copy_name])
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[d_copy_name]))
+
+        jzero_shl_e_line = self.current_line
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[d_copy_name]) + " SHL_E")
+        jump_div_line = self.current_line
+        self.add_line_of_code("JUMP DIV")
+
+        self.output_code[jzero_shl_e_line] = self.output_code[jzero_shl_e_line].replace("SHL_E", str(self.current_line))
+
+        self.move_value_from_memory_to_register(e_copy_name)
+        self.add_line_of_code("SHL " + str(self.variables_with_registers[e_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[e_copy_name])
+
+        self.add_line_of_code("JUMP " + str(loop0_line))
+
+        self.output_code[jump_div_line] = self.output_code[jump_div_line].replace("DIV", str(self.current_line))
+        self.move_value_from_memory_to_register(d_copy_name)
+        self.add_line_of_code("ZERO " + str(self.variables_with_registers[d_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[d_copy_name])
+
+        loop1_line = self.current_line
+        self.move_value_from_memory_to_register(e_copy_name)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[e_copy_name], c_copy_name)
+
+        self.move_value_from_memory_to_register(c_copy_name)
+        self.iterate_register_to_number(0, self.memory[a_copy_name])
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[c_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[c_copy_name])
+
+        jzero_inst_one_line = self.current_line
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[c_copy_name]) + " ONE_LINE")
+
+        self.move_value_from_memory_to_register(d_copy_name)
+        self.add_line_of_code("SHL " + str(self.variables_with_registers[d_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[d_copy_name])
+
+        self.move_value_from_memory_to_register(e_copy_name)
+        self.add_line_of_code("SHR " + str(self.variables_with_registers[e_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[e_copy_name])
+
+        jump_check_line = self.current_line
+        self.add_line_of_code("JUMP CHECK")
+        self.output_code[jzero_inst_one_line] = self.output_code[jzero_inst_one_line].replace("ONE_LINE",
+                                                                                              str(self.current_line))
+
+        self.move_value_from_memory_to_register(d_copy_name)
+        self.add_line_of_code("SHL " + str(self.variables_with_registers[d_copy_name]))
+        self.add_line_of_code("INC " + str(self.variables_with_registers[d_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[d_copy_name])
+
+        self.move_value_from_memory_to_register(a_copy_name)
+        self.iterate_register_to_number(0, self.memory[e_copy_name])
+
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[a_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[a_copy_name])
+
+        self.move_value_from_memory_to_register(e_copy_name)
+        self.add_line_of_code("SHR " + str(self.variables_with_registers[e_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[e_copy_name])
+
+        self.output_code[jump_check_line] = self.output_code[jump_check_line].replace("CHECK", str(self.current_line))
+
+        self.move_value_from_memory_to_register(b_copy_name)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[b_copy_name], c_copy_name)
+
+        self.move_value_from_memory_to_register(c_copy_name)
+        self.iterate_register_to_number(0, self.memory[e_copy_name])
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[c_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[c_copy_name])
+
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[c_copy_name]) + " " + str(loop1_line))
+        jump_end_line = self.current_line
+        self.add_line_of_code("JUMP END")
+
+        self.output_code[jzer_dzero_line] = self.output_code[jzer_dzero_line].replace("D_ZERO", str(self.current_line))
+
+        self.move_value_from_memory_to_register(a_copy_name)
+        self.add_line_of_code("ZERO " + str(self.variables_with_registers[a_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[a_copy_name])
+
+        self.move_value_from_memory_to_register(d_copy_name)
+        self.add_line_of_code("ZERO " + str(self.variables_with_registers[d_copy_name]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[d_copy_name])
+
+        self.output_code[jump_end_line] = self.output_code[jump_end_line].replace("END", str(self.current_line))
+
+        self.move_value_from_memory_to_register(a_copy_name)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[a_copy_name], assign_to_var)
 
     def assign_plus(self, assign):
         assign_to_var = assign[1]
