@@ -77,7 +77,7 @@ class Lexer(object):
         return t
 
     def t_comment(self, t):
-        r'\{.*\}'
+        r'\{[^\}]*\}'
         pass
 
     def t_error(self, t):
