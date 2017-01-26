@@ -33,8 +33,6 @@ def parse_args():
 
 def compilation(file_path, out_path):
     parser = Parser()
-    # flow_graph = FlowGraph()
-    # machine_code = MachineCode()
 
     with open(file_path, 'r') as f:
         content = f.read()
@@ -53,8 +51,6 @@ def compilation(file_path, out_path):
     with open("labor4/code", 'w') as f:
         for line in code:
             f.write(line + '\n')
-    # flow_graph = FlowGraph(parse_tree, abstract_syntax_tree)
-    # flow_graph.create_flow_graph()
 
 if __name__ == '__main__':
     main()

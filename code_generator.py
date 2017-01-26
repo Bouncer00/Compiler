@@ -108,71 +108,8 @@ class CodeGenerator:
 
         print "assign", assign
 
-    # def assign(self, assign):
-    #     variable = assign[1]
-    #     value = assign[2]
-    #
-    #     if isinstance(value, long):
-    #         if self.variables_with_registers.has_key(variable):
-    #             register = self.variables_with_registers[variable]
-    #         else:
-    #             register = self.get_free_register_number()
-    #         self.add_line_of_code("ZERO " + str(register))
-    #         if value == 0:
-    #             if isinstance(variable, tuple):
-    #                 self.iterate_register_to_number_array(0, variable)
-    #             else:
-    #                 self.iterate_register_to_number(0, self.memory[variable])
-    #             self.add_line_of_code("STORE " + str(register))
-    #             return variable
-    #
-    #         value = bin(value)[3:]
-    #         self.add_line_of_code('INC ' + str(register))
-    #         for b in value:
-    #             self.add_line_of_code('SHL ' + str(register))
-    #             if b == '1':
-    #                 self.add_line_of_code('INC ' + str(register))
-    #         self.store_value_in_register(variable, register)
-    #         if isinstance(variable, tuple):
-    #             self.iterate_register_to_number_array(0, variable)
-    #         else:
-    #             self.iterate_register_to_number(0, self.memory[variable])
-    #         self.add_line_of_code("STORE " + str(register))
-    #
-    #         return variable
-    #
-    #     # elif not isinstance(variable, long) and not isinstance(value, long):
-    #     #     pass
-    #
-    #
-    #     elif value[0] == "+":
-    #         self.assign_plus(assign)
-    #     elif value[0] == "-":
-    #         self.assign_minus(assign)
-    #     elif value[0] == "*":
-    #         self.assign_mul(assign)
-    #     elif value[0] == "/":
-    #         self.assign_div(assign)
-    #     elif value[0] == "%":
-    #         self.assign_modulo(assign)
-    #     elif not isinstance(variable, long) and not isinstance(value, long):
-    #         self.move_value_from_memory_to_register(value)
-    #         if variable != value:
-    #             self.copy_value_from_register_to_memory(self.variables_with_registers[value], variable)
-    #
-    #     print "assign", assign
-
     def if_then(self, cmd):
         condition_statement = cmd[1][0]
-
-        # variable0 = cmd[1][1]
-        # variable1 = cmd[1][2]
-        #
-        # if isinstance(variable1, long) and not isinstance(variable0, long):
-        #     self.move_value_from_memory_to_register(variable0)
-        #
-        # elif not isinstance(variable0, long) and not isinstance(variable1, long):
-        #     self.move_value_from_memory_to_register(variable0)
 
         condition_start_line = None
 
@@ -203,14 +140,6 @@ class CodeGenerator:
 
         variable0 = cmd[1][1]
         variable1 = cmd[1][2]
-
-
-        # if isinstance(variable1, long) and not isinstance(variable0, long):
-        #     self.move_value_from_memory_to_register(variable0)
-        #
-        # elif not isinstance(variable0, long) and not isinstance(variable1, long):
-        #     self.move_value_from_memory_to_register(variable0)
-
 
         condition_start_line = None
 
@@ -893,48 +822,6 @@ class CodeGenerator:
         self.output_code[jzero_inst_line] = self.output_code[jzero_inst_line].replace("END", str(self.current_line))
 
         return jzero_inst_line
-
-    # def assign_mul(self, assign):
-    #     assign_to_var = assign[1]
-    #     var0 = assign[2][1]
-    #     var1 = assign[2][2]
-    #
-    #     if isinstance(var1, long):
-    #         var0, var1 = var1, var0
-    #
-    #     self.move_value_from_memory_to_register(assign_to_var)
-    #     self.add_line_of_code("ZERO " + str(self.variables_with_registers[assign_to_var]))
-    #
-    #     jzero_line_start = self.current_line
-    #     self.move_value_from_memory_to_register(var0)
-    #     jzero_inst_line = self.current_line
-    #     self.add_line_of_code("JZERO " + str(self.variables_with_registers[var0]) + " END")
-    #     jodd_line = self.current_line
-    #     self.add_line_of_code("JODD " + str(self.variables_with_registers[var0]) + " ADDING")
-    #     multi_line = self.current_line
-    #     self.add_line_of_code("JUMP " + "SHIFT")
-    #
-    #     add_line = self.current_line
-    #     self.iterate_register_to_number(0, self.memory[var1])
-    #     self.add_line_of_code("ADD " + str(self.variables_with_registers[assign_to_var]))
-    #     self.move_value_from_register_to_memory(self.variables_with_registers[assign_to_var])
-    #
-    #     shift_line = self.current_line
-    #     self.move_value_from_memory_to_register(var0)
-    #     self.add_line_of_code("SHR " + str(self.variables_with_registers[var0]))
-    #     self.move_value_from_register_to_memory(self.variables_with_registers[var0])
-    #
-    #     self.move_value_from_memory_to_register(var1)
-    #     self.add_line_of_code("SHL " + str(self.variables_with_registers[var1]))
-    #     self.move_value_from_register_to_memory(self.variables_with_registers[var1])
-    #
-    #     self.add_line_of_code("JUMP " + str(jzero_line_start))
-    #
-    #     self.output_code[jodd_line] = self.output_code[jodd_line].replace("ADDING", str(add_line))
-    #     self.output_code[multi_line] = self.output_code[multi_line].replace("SHIFT", str(shift_line))
-    #     self.output_code[jzero_inst_line] = self.output_code[jzero_inst_line].replace("END", str(self.current_line))
-
-    #    return jzero_inst_line
 
     def assign_div(self, assign):
         assign_to_var = assign[1]
