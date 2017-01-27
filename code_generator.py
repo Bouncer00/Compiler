@@ -439,7 +439,6 @@ class CodeGenerator:
         return number_of_commands
 
     def iterate_register_to_number_array(self, register, variable):
-        # if(register == 0):
         if(register != 0):
             raise CompilerException("Register cannot be != 0")
         number_of_commands = 0
