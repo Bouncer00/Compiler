@@ -446,7 +446,9 @@ class CodeGenerator:
         iterator = variable[1]
 
         if isinstance(iterator, str):
-            self.move_value_from_memory_to_register(iterator)
+            # self.move_value_from_memory_to_register(iterator)
+            # self.add_line_of_code("COPY " + str(self.variables_with_registers[iterator]))
+            number_of_commands += self.iterate_register_to_number(0, self.memory[iterator])
             number_of_commands += self.iterate_register_to_number(4, start_of_array_memory)
             self.add_line_of_code("ADD " + str(4))
             number_of_commands += 1
@@ -470,9 +472,6 @@ class CodeGenerator:
 
     def get_variable_by_name(self):
         pass
-
-
-    '''Math operations'''
 
     def eq(self, condition):
         variable0 = condition[1]
@@ -623,62 +622,6 @@ class CodeGenerator:
         self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable0]) + " END")
         return condition_start_line0, number_of_commands
 
-
-    # def gt(self, condition):
-    #     variable0 = condition[1]
-    #     variable1 = condition[2]
-    #
-    #     if isinstance(variable0, tuple) and not isinstance(variable1, tuple):
-    #         pass
-    #     elif not isinstance(variable0, tuple) and isinstance(variable1, tuple):
-    #         pass
-    #
-    #     # f.e: a > 0
-    #     elif isinstance(variable1, long) and not isinstance(variable0, long):
-    #         # self.move_value_from_memory_to_register(variable0)
-    #
-    #         number_of_commands = 0
-    #         self.zero_register(0)
-    #         number_of_commands += 1
-    #         number_of_commands += self.iterate_register_to_number(0, self.memory[condition[2]])
-    #         self.add_line_of_code("SUB " + str(self.variables_with_registers[variable0]))
-    #         condition_start_line = self.current_line
-    #         self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable0]) + " END")
-    #         self.move_value_from_memory_to_register(variable0)
-    #         # if self.output_code[condition_start_line] == "START":
-    #         #     self.output_code[condition_start_line] = "JZERO " + \
-    #         #                                              str(self.variables_with_registers[variable0]) + " " + \
-    #         #                                              "END"
-    #         # self.add_line_of_code("ADD " + str(self.variables_with_registers[variable0]))
-    #
-    #             # else:
-    #             #     raise CompilerException("Couldnt convert condition statement")
-    #
-    #         return condition_start_line, number_of_commands + 3
-    #
-    #     # f.e: 10 > a
-    #     elif isinstance(variable0, long) and not isinstance(variable1, long):
-    #         raise CompilerException("Not yet implemented")
-    #
-    #     elif isinstance(variable0, long) and isinstance(variable1, long):
-    #         pass
-    #
-    #     elif not isinstance(variable0, long) and not isinstance(variable1, long):
-    #         var0_reg = self.variables_with_registers[variable0]
-    #         var1_mem = self.memory[variable1]
-    #         self.zero_register(0)
-    #         number_of_commands = self.iterate_register_to_number(0, var1_mem)
-    #         self.add_line_of_code("SUB " + str(var0_reg))
-    #         condition_start_line = self.current_line
-    #         self.add_line_of_code("JZERO " + str(self.variables_with_registers[variable0]) + " END")
-    #         self.move_value_from_memory_to_register(variable0)
-    #
-    #
-    #         return condition_start_line, number_of_commands
-    #
-    #     else:
-    #         raise CompilerException("WTF")
-
     def lt(self, condition):
         variable0 = condition[1]
         variable1 = condition[2]
@@ -790,6 +733,7 @@ class CodeGenerator:
 
         self.move_value_from_memory_to_register(assign_to_var)
         self.add_line_of_code("ZERO " + str(self.variables_with_registers[assign_to_var]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[assign_to_var])
 
         jzero_line_start = self.current_line
         self.move_value_from_memory_to_register(var0_copy_name)
@@ -801,6 +745,7 @@ class CodeGenerator:
         self.add_line_of_code("JUMP " + "SHIFT")
 
         add_line = self.current_line
+        self.move_value_from_memory_to_register(assign_to_var)
         self.iterate_register_to_number(0, self.memory[var1_copy_name])
         self.add_line_of_code("ADD " + str(self.variables_with_registers[assign_to_var]))
         self.move_value_from_register_to_memory(self.variables_with_registers[assign_to_var])
