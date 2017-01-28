@@ -234,12 +234,12 @@ class CodeGenerator:
         iterator = cmd[1]
         start = cmd[2]
         end = cmd[3]
-        iterator_backup_name = self.id_generator()
-        iterator_memory_cell = self.get_free_memory_cell()
-        self.memory[iterator_backup_name] = iterator_memory_cell
+        counter = self.id_generator()
+        counter_memory_cell = self.get_free_memory_cell()
+        self.memory[counter] = counter_memory_cell
 
         self.move_value_from_memory_to_register(iterator)
-        self.copy_value_from_register_to_memory(self.variables_with_registers[iterator], iterator_backup_name)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[iterator], counter)
 
         self.move_value_from_memory_to_register(start)
         self.assign(("", iterator, start))
@@ -263,8 +263,8 @@ class CodeGenerator:
         after_jzero_line = self.current_line
         self.output_code[jzero_start] = self.output_code[jzero_start].replace("END", str(after_jzero_line))
 
-        self.move_value_from_memory_to_register(iterator_backup_name)
-        self.copy_value_from_register_to_memory(self.variables_with_registers[iterator_backup_name], iterator)
+        self.move_value_from_memory_to_register(counter)
+        self.copy_value_from_register_to_memory(self.variables_with_registers[counter], iterator)
 
         print "for_down", cmd
 
@@ -273,36 +273,36 @@ class CodeGenerator:
         start = cmd[2]
         end = cmd[3]
 
-        iterator_backup_name = self.id_generator()
-        iterator_memory_cell = self.get_free_memory_cell()
-        self.memory[iterator_backup_name] = iterator_memory_cell
-
-        self.move_value_from_memory_to_register(iterator)
-        self.copy_value_from_register_to_memory(self.variables_with_registers[iterator], iterator_backup_name)
+        counter = self.id_generator()
+        counter_memory_cell = self.get_free_memory_cell()
+        self.memory[counter] = counter_memory_cell
 
         self.move_value_from_memory_to_register(start)
         self.assign(("", iterator, start))
-
-        for_start_line = self.current_line
         self.move_value_from_memory_to_register(end)
         self.add_line_of_code("INC " + str(self.variables_with_registers[end]))
-        self.iterate_register_to_number(0, self.memory[iterator])
-        self.add_line_of_code("SUB " + str(self.variables_with_registers[end]))
+        self.copy_value_from_register_to_memory(self.variables_with_registers[end], counter)
+
+        self.assign_minus(("", counter, ("", counter, iterator)))
+        for_start_line = self.current_line
+        self.move_value_from_memory_to_register(counter)
         jzero_start = self.current_line
-        self.add_line_of_code("JZERO " + str(self.variables_with_registers[end]) + " END")
-        # self.move_value_from_memory_to_register(iterator)
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[counter]) + " END")
+
         for command in cmd[4]:
             self.proceed_by_command_type(command)
 
         self.move_value_from_memory_to_register(iterator)
         self.add_line_of_code("INC " + str(self.variables_with_registers[iterator]))
         self.move_value_from_register_to_memory(self.variables_with_registers[iterator])
+
+        self.move_value_from_memory_to_register(counter)
+        self.add_line_of_code("DEC " + str(self.variables_with_registers[counter]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[counter])
+
         self.add_line_of_code("JUMP " + str(for_start_line))
         after_jzero_line = self.current_line
         self.output_code[jzero_start] = self.output_code[jzero_start].replace("END", str(after_jzero_line))
-
-        self.move_value_from_memory_to_register(iterator_backup_name)
-        self.copy_value_from_register_to_memory(self.variables_with_registers[iterator_backup_name], iterator)
 
         print "for_up", cmd
 
