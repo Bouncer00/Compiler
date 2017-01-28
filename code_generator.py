@@ -237,21 +237,21 @@ class CodeGenerator:
         counter = self.id_generator()
         counter_memory_cell = self.get_free_memory_cell()
         self.memory[counter] = counter_memory_cell
-
-        self.move_value_from_memory_to_register(iterator)
-        self.copy_value_from_register_to_memory(self.variables_with_registers[iterator], counter)
+        
+        self.move_value_from_memory_to_register(start)
+        self.iterate_register_to_number(0, self.memory[end])
+        self.add_line_of_code("SUB " + str(self.variables_with_registers[start]))
+        self.add_line_of_code("INC " + str(self.variables_with_registers[start]))
+        self.copy_value_from_register_to_memory(self.variables_with_registers[start], counter)
 
         self.move_value_from_memory_to_register(start)
         self.assign(("", iterator, start))
 
         for_start_line = self.current_line
-        self.move_value_from_memory_to_register(iterator)
-        self.iterate_register_to_number(0, self.memory[end])
-        # self.add_line_of_code("INC " + str(self.variables_with_registers[iterator]))
-        self.add_line_of_code("SUB " + str(self.variables_with_registers[iterator]))
+        self.move_value_from_memory_to_register(counter)
         jzero_start = self.current_line
-        self.add_line_of_code("JZERO " + str(self.variables_with_registers[iterator]) + " END")
-        self.move_value_from_memory_to_register(iterator)
+        self.add_line_of_code("JZERO " + str(self.variables_with_registers[counter]) + " END")
+        # self.move_value_from_memory_to_register(iterator)
 
         for command in cmd[4]:
             self.proceed_by_command_type(command)
@@ -259,6 +259,11 @@ class CodeGenerator:
         self.move_value_from_memory_to_register(iterator)
         self.add_line_of_code("DEC " + str(self.variables_with_registers[iterator]))
         self.move_value_from_register_to_memory(self.variables_with_registers[iterator])
+
+        self.move_value_from_memory_to_register(counter)
+        self.add_line_of_code("DEC " + str(self.variables_with_registers[counter]))
+        self.move_value_from_register_to_memory(self.variables_with_registers[counter])
+        
         self.add_line_of_code("JUMP " + str(for_start_line))
         after_jzero_line = self.current_line
         self.output_code[jzero_start] = self.output_code[jzero_start].replace("END", str(after_jzero_line))
