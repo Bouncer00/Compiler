@@ -526,7 +526,7 @@ class CodeGenerator:
             number_of_commands += 1
             self.add_line_of_code("COPY " + str(register))
             number_of_commands += 1
-            self.zero_register(4)
+            self.zero_register(register)
             number_of_commands += 1
             return number_of_commands
 
@@ -1029,6 +1029,9 @@ class CodeGenerator:
         self.output_code[jodd_line] = self.output_code[jodd_line].replace("ADDING", str(add_line))
         self.output_code[multi_line] = self.output_code[multi_line].replace("SHIFT", str(shift_line))
         self.output_code[jzero_inst_line] = self.output_code[jzero_inst_line].replace("END", str(self.current_line))
+
+        del self.memory[var0_copy_name]
+        del self.memory[var1_copy_name]
 
         return jzero_inst_line
 
