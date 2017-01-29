@@ -81,12 +81,11 @@ class CodeGenerator:
         variable = assign[1]
         value = assign[2]
 
-        if isinstance(variable, tuple):
-            self.iterate_register_to_number_array(0, variable)
-        else:
-            self.iterate_register_to_number(0, self.memory[variable])
-
         if isinstance(value, long):
+            if isinstance(variable, tuple):
+                self.iterate_register_to_number_array(0, variable)
+            else:
+                self.iterate_register_to_number(0, self.memory[variable])
             register = self.get_free_register_number()
             self.iterate_register_to_number(register, value)
             self.add_line_of_code("STORE " + str(register))
@@ -101,9 +100,15 @@ class CodeGenerator:
             self.assign_div(assign)
         elif value[0] == "%":
             self.assign_modulo(assign)
-        elif not isinstance(variable, long) and not isinstance(value, long):
+        # elif not isinstance(variable, long) and not isinstance(value, long):
+        #     self.move_value_from_memory_to_register(value)
+        #     if variable != value:
+        #         self.copy_value_from_register_to_memory(self.variables_with_registers[value], variable)
+        else:
             self.move_value_from_memory_to_register(value)
-            if variable != value:
+            if isinstance(variable, tuple):
+                self.copy_value_from_register_to_memory_array(self.variables_with_registers[value], variable)
+            else:
                 self.copy_value_from_register_to_memory(self.variables_with_registers[value], variable)
 
         print "assign", assign
@@ -234,12 +239,25 @@ class CodeGenerator:
         iterator = cmd[1]
         start = cmd[2]
         end = cmd[3]
+
+        iterator_backup = self.id_generator()
+        iterator_backup_memory_cell = self.get_free_memory_cell()
+        self.memory[iterator_backup] = iterator_backup_memory_cell
+        self.move_value_from_memory_to_register(iterator)
+        if isinstance(iterator, tuple):
+            self.copy_value_from_register_to_memory_array(iterator, iterator_backup)
+        else:
+            self.copy_value_from_register_to_memory(self.variables_with_registers[iterator], iterator_backup)
+
         counter = self.id_generator()
         counter_memory_cell = self.get_free_memory_cell()
         self.memory[counter] = counter_memory_cell
         
         self.move_value_from_memory_to_register(start)
-        self.iterate_register_to_number(0, self.memory[end])
+        if isinstance(end, tuple):
+            self.iterate_register_to_number_array(0, end)
+        else:
+            self.iterate_register_to_number(0, self.memory[end])
         self.add_line_of_code("SUB " + str(self.variables_with_registers[start]))
         self.add_line_of_code("INC " + str(self.variables_with_registers[start]))
         self.copy_value_from_register_to_memory(self.variables_with_registers[start], counter)
@@ -268,8 +286,14 @@ class CodeGenerator:
         after_jzero_line = self.current_line
         self.output_code[jzero_start] = self.output_code[jzero_start].replace("END", str(after_jzero_line))
 
-        self.move_value_from_memory_to_register(counter)
-        self.copy_value_from_register_to_memory(self.variables_with_registers[counter], iterator)
+        # self.move_value_from_memory_to_register(counter)
+        # self.copy_value_from_register_to_memory(self.variables_with_registers[counter], iterator)
+
+        self.move_value_from_memory_to_register(iterator_backup)
+        if isinstance(iterator, tuple):
+            self.copy_value_from_register_to_memory_array(iterator_backup, iterator)
+        else:
+            self.copy_value_from_register_to_memory(self.variables_with_registers[iterator_backup], iterator)
 
         print "for_down", cmd
 
@@ -277,6 +301,15 @@ class CodeGenerator:
         iterator = cmd[1]
         start = cmd[2]
         end = cmd[3]
+
+        iterator_backup = self.id_generator()
+        iterator_backup_memory_cell = self.get_free_memory_cell()
+        self.memory[iterator_backup] = iterator_backup_memory_cell
+        self.move_value_from_memory_to_register(iterator)
+        if isinstance(iterator, tuple):
+            self.copy_value_from_register_to_memory_array(iterator, iterator_backup)
+        else:
+            self.copy_value_from_register_to_memory(self.variables_with_registers[iterator], iterator_backup)
 
         counter = self.id_generator()
         counter_memory_cell = self.get_free_memory_cell()
@@ -309,6 +342,11 @@ class CodeGenerator:
         after_jzero_line = self.current_line
         self.output_code[jzero_start] = self.output_code[jzero_start].replace("END", str(after_jzero_line))
 
+        self.move_value_from_memory_to_register(iterator_backup)
+        if isinstance(iterator, tuple):
+            self.copy_value_from_register_to_memory_array(iterator_backup, iterator)
+        else:
+            self.copy_value_from_register_to_memory(self.variables_with_registers[iterator_backup], iterator)
         print "for_up", cmd
 
     def read(self, cmd):
