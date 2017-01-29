@@ -100,10 +100,6 @@ class CodeGenerator:
             self.assign_div(assign)
         elif value[0] == "%":
             self.assign_modulo(assign)
-        # elif not isinstance(variable, long) and not isinstance(value, long):
-        #     self.move_value_from_memory_to_register(value)
-        #     if variable != value:
-        #         self.copy_value_from_register_to_memory(self.variables_with_registers[value], variable)
         else:
             self.move_value_from_memory_to_register(value)
             if isinstance(variable, tuple):
@@ -165,8 +161,6 @@ class CodeGenerator:
         for command in cmd[2]:
             self.proceed_by_command_type(command)
 
-        # self.iterate_register_to_number(0, self.memory[variable1])
-        # self.add_line_of_code("JUMP " + str(condition_start_line - 1))
         after_jump_line = self.current_line + 1
 
         if condition_start_line is not None:
@@ -203,9 +197,6 @@ class CodeGenerator:
 
         if isinstance(variable1, long) and not isinstance(variable0, long):
             self.move_value_from_memory_to_register(variable0)
-
-        # elif isinstance(variable0, long) and not isinstance(variable1, long):
-        #     self.move_value_from_register_to_memory(variable1)
 
         elif not isinstance(variable0, long) and not isinstance(variable1, long):
             self.move_value_from_memory_to_register(variable0)
@@ -269,7 +260,6 @@ class CodeGenerator:
         self.move_value_from_memory_to_register(counter)
         jzero_start = self.current_line
         self.add_line_of_code("JZERO " + str(self.variables_with_registers[counter]) + " END")
-        # self.move_value_from_memory_to_register(iterator)
 
         for command in cmd[4]:
             self.proceed_by_command_type(command)
@@ -285,9 +275,6 @@ class CodeGenerator:
         self.add_line_of_code("JUMP " + str(for_start_line))
         after_jzero_line = self.current_line
         self.output_code[jzero_start] = self.output_code[jzero_start].replace("END", str(after_jzero_line))
-
-        # self.move_value_from_memory_to_register(counter)
-        # self.copy_value_from_register_to_memory(self.variables_with_registers[counter], iterator)
 
         self.move_value_from_memory_to_register(iterator_backup)
         if isinstance(iterator, tuple):
@@ -382,13 +369,6 @@ class CodeGenerator:
         self.variables_with_registers[value] = register_number
         self.add_line_of_code("GET " + str(register_number))
 
-    # def move_value_from_register_to_memory(self, register_number):
-    #     value = self.registers[register_number]
-    #     memory_cell_index = self.memory[value]
-    #     self.iterate_register_to_number(0, memory_cell_index)
-    #     self.add_line_of_code("STORE " + str(register_number))
-    #     return memory_cell_index
-
     def move_value_from_register_to_memory(self, register_number):
         var_name = self.registers[register_number]
         if isinstance(var_name, tuple):
@@ -400,12 +380,6 @@ class CodeGenerator:
             self.add_line_of_code("STORE " + str(register_number))
             return self.memory[var_name]
 
-    # def copy_value_from_register_to_memory_array(self, register_number, var_name):
-    #     number_of_commands = 0
-    #     start_of_array_memory = self.memory[var_name]
-    #     number_of_commands += self.iterate_register_to_number(0, start_of_array_memory)
-    #     self.add_line_of_code("STORE " + str(register_number))
-    #     return number_of_commands
 
     def copy_value_from_register_to_memory_array(self, register_number, var_name):
         number_of_commands = 0
@@ -471,6 +445,8 @@ class CodeGenerator:
     def zero_registers(self):
         for i in xrange(len(self.registers)):
             self.zero_register(i)
+        #self.variables_with_registers = {}
+
 
     def zero_register(self, register_number):
         if register_number > len(self.registers) - 1:
@@ -518,7 +494,10 @@ class CodeGenerator:
             return number_of_commands
 
         else:
-            self.move_value_from_memory_to_register(iterator)
+            #self.move_value_from_memory_to_register(iterator)
+            # if self.variables_with_registers.has_key(variable):
+            #     register = self.variables_with_registers[variable]
+            # else:
             register = self.get_free_register_number()
             number_of_commands += self.iterate_register_to_number(0, self.memory[iterator])
             number_of_commands += self.iterate_register_to_number(register, start_of_array_memory)
@@ -526,6 +505,9 @@ class CodeGenerator:
             number_of_commands += 1
             self.add_line_of_code("COPY " + str(register))
             number_of_commands += 1
+            reg_var = self.registers[register]
+            if reg_var is not None and reg_var is isinstance(reg_var, str):
+                del self.variables_with_registers[reg_var]
             self.zero_register(register)
             number_of_commands += 1
             return number_of_commands
@@ -592,7 +574,6 @@ class CodeGenerator:
 
         self.output_code[condition_start_line0] = self.output_code[condition_start_line0].replace("END", str(
             second_check_line))
-        # self.output_code[condition_start_line1] = self.output_code[condition_start_line1].replace("END", str(self.current_line))
 
         return jump0_line, jump1_line, number_of_commands
 
@@ -730,12 +711,6 @@ class CodeGenerator:
         variable0 = condition[1]
         variable1 = condition[2]
 
-        # var0_copy_name = "while_eq_var0_copy_name"
-        # self.memory[var0_copy_name] = self.get_free_memory_cell()
-
-        # self.move_value_from_memory_to_register(variable0)
-        # self.copy_value_from_register_to_memory(self.variables_with_registers[variable0], var0_copy_name)
-
         number_of_commands = 0
 
         if isinstance(variable0, long) and isinstance(variable1, long):
@@ -862,12 +837,6 @@ class CodeGenerator:
     def while_gt(self, condition):
         variable0 = condition[1]
         variable1 = condition[2]
-
-        # var1_copy_name = "while_eq_var0_copy_name"
-        # self.memory[var1_copy_name] = self.get_free_memory_cell()
-        #
-        # self.move_value_from_memory_to_register(variable1)
-        # self.copy_value_from_register_to_memory(self.variables_with_registers[variable1], var1_copy_name)
 
         number_of_commands = 0
 
@@ -1157,6 +1126,19 @@ class CodeGenerator:
         self.move_value_from_register_to_memory(self.variables_with_registers[d_copy_name])
 
         self.output_code[jump_end_line] = self.output_code[jump_end_line].replace("END", str(self.current_line))
+
+        self.registers[self.variables_with_registers[a_copy_name]] = None
+        self.registers[self.variables_with_registers[b_copy_name]] = None
+        self.registers[self.variables_with_registers[c_copy_name]] = None
+        self.registers[self.variables_with_registers[d_copy_name]] = None
+        self.registers[self.variables_with_registers[e_copy_name]] = None
+
+        del self.variables_with_registers[a_copy_name]
+        del self.variables_with_registers[b_copy_name]
+        del self.variables_with_registers[d_copy_name]
+        del self.variables_with_registers[e_copy_name]
+
+        self.zero_registers()
 
         self.move_value_from_memory_to_register(d_copy_name)
         if isinstance(assign_to_var, tuple):
