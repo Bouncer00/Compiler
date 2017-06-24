@@ -480,8 +480,6 @@ class CodeGenerator:
         iterator = variable[1]
 
         if isinstance(iterator, str):
-            # self.move_value_from_memory_to_register(iterator)
-            # self.add_line_of_code("COPY " + str(self.variables_with_registers[iterator]))
             register = self.get_free_register_number()
             number_of_commands += self.iterate_register_to_number(0, self.memory[iterator])
             number_of_commands += self.iterate_register_to_number(register, start_of_array_memory)
@@ -494,10 +492,6 @@ class CodeGenerator:
             return number_of_commands
 
         else:
-            #self.move_value_from_memory_to_register(iterator)
-            # if self.variables_with_registers.has_key(variable):
-            #     register = self.variables_with_registers[variable]
-            # else:
             register = self.get_free_register_number()
             number_of_commands += self.iterate_register_to_number(0, self.memory[iterator])
             number_of_commands += self.iterate_register_to_number(register, start_of_array_memory)
